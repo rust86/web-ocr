@@ -1,20 +1,25 @@
 <!DOCTYPE html>
 <html lang="ru" class="dark">
 <head>
-  <meta name="yandex-verification" content="4ee02d515e683e7d" />
-  <meta name="google-site-verification" content="fpqU91KmJvqzYIf43ERGvBoW8wZVrIFi47SDfQQ36B4" />
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LensText OCR — Умное распознавание текста</title>
+  <title>LensText OCR — Бесплатное распознавание текста со скриншотов онлайн</title>
+  <meta name="description" content="Бесплатное и безопасное распознавание текста со скриншотов и фото онлайн прямо в браузере (Ctrl+V). Русский и английский языки, без регистрации и передачи на сервер.">
+  <meta name="keywords" content="ocr онлайн, распознать текст со скриншота, распознавание текста бесплатно, tesseract онлайн, скопировать текст с картинки">
+
+  <!-- Метатеги подтверждения поисковых систем -->
+  <meta name="yandex-verification" content="4ee02d515e683e7d" />
+  <meta name="google-site-verification" content="fpqU91KmJvqzYIf43ERGvBow8wZVrIFi47SDfQQ36B4" />
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Inter -->
+  <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Tesseract.js CDN -->
+  <!-- Tesseract.js v5 -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <script>
@@ -29,7 +34,6 @@
           colors: {
             brand: {
               50: '#eef2ff',
-              100: '#e0e7ff',
               500: '#6366f1',
               600: '#4f46e5',
               700: '#4338ca',
@@ -41,1378 +45,707 @@
   </script>
 
   <style>
-    /* Плавные переходы и кастомный скроллбар */
-    ::-webkit-scrollbar {
+    body {
+      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #09090b 70%);
+      min-height: 100vh;
+    }
+    .glass-card {
+      background: rgba(18, 18, 23, 0.75);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
       width: 6px;
       height: 6px;
     }
-    ::-webkit-scrollbar-track {
-      background: rgba(15, 23, 42, 0.6);
-    }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(99, 102, 241, 0.4);
-      border-radius: 9999px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(99, 102, 241, 0.7);
-    }
-    .scanner-line {
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, transparent, #818cf8, #4f46e5, transparent);
-      box-shadow: 0 0 15px #6366f1;
-      animation: scan 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-    }
-    @keyframes scan {
-      0% { top: 0%; opacity: 0; }
-      20% { opacity: 1; }
-      80% { opacity: 1; }
-      100% { top: 100%; opacity: 0; }
-    }
-    .dropzone-pulse {
-      animation: pulseBorder 2s infinite;
-    }
-    @keyframes pulseBorder {
-      0%, 100% { border-color: rgba(99, 102, 241, 0.4); }
-      50% { border-color: rgba(129, 140, 248, 0.9); box-shadow: 0 0 20px rgba(99, 102, 241, 0.15); }
-    }
-    /* Стили интерактивной рамки кадрирования */
-    .crop-selection-rect {
-      border: 2px dashed #6366f1;
-      background-color: rgba(99, 102, 241, 0.15);
-      box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.75);
-      pointer-events: none;
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
     }
   </style>
 </head>
+<body class="text-slate-200 antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
 
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
-  
-  <!-- Фоновые неоновые эффекты -->
-  <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-    <div class="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl"></div>
-    <div class="absolute top-1/3 -right-40 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl"></div>
-    <div class="absolute -bottom-40 left-1/3 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl"></div>
-  </div>
-
-  <!-- Верхняя панель / Навигация -->
-  <header class="border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-md sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      
-      <!-- Логотип -->
+  <!-- Навигация -->
+  <header class="border-b border-white/10 sticky top-0 z-30 bg-[#09090b]/80 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-          <i data-lucide="scan-text" class="w-5 h-5 text-white"></i>
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <i data-lucide="scan-text" class="w-6 h-6 text-white"></i>
         </div>
         <div>
-          <div class="flex items-center gap-2">
-            <span class="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-100 to-indigo-300">LensText</span>
-            <span class="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">OCR AI</span>
-          </div>
-          <p class="text-xs text-slate-400 hidden sm:block">Распознавание текста с фото и скриншотов</p>
+          <span class="font-bold text-lg text-white tracking-tight">LensText <span class="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">OCR AI</span></span>
+          <p class="text-xs text-slate-400 hidden sm:block">100% локальное распознавание текста без отправки на сервер</p>
         </div>
       </div>
-
-      <!-- Быстрые действия в шапке -->
-      <div class="flex items-center gap-2.5">
-        <button id="cameraModalOpenBtn" class="flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-medium rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800/80 transition-all shadow-sm">
-          <i data-lucide="camera" class="w-4 h-4 text-indigo-400"></i>
-          <span class="hidden sm:inline">Камера</span>
+      <div class="flex items-center gap-2">
+        <button id="btnWebcam" class="p-2.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-slate-300" title="Снимок с веб-камеры">
+          <i data-lucide="camera" class="w-4 h-4"></i>
         </button>
-
-        <button id="historyToggleBtn" class="flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-medium rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800/80 transition-all shadow-sm">
-          <i data-lucide="history" class="w-4 h-4 text-indigo-400"></i>
-          <span class="hidden sm:inline">История</span>
-          <span id="historyBadge" class="hidden w-5 h-5 text-[10px] items-center justify-center rounded-full bg-indigo-600 text-white font-bold">0</span>
+        <button id="btnOpenHistory" class="p-2.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-slate-300" title="История распознаваний">
+          <i data-lucide="history" class="w-4 h-4"></i>
         </button>
       </div>
-
     </div>
   </header>
 
-  <!-- Основной контент -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex flex-col gap-6">
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-    <!-- Подсказка о горячей клавише Paste -->
-    <div class="flex items-center justify-between flex-wrap gap-3 bg-gradient-to-r from-indigo-950/40 via-slate-900/40 to-slate-900/40 border border-indigo-500/20 rounded-2xl p-3.5 sm:px-5">
-      <div class="flex items-center gap-3">
-        <span class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
-          <i data-lucide="sparkles" class="w-4 h-4"></i>
-        </span>
-        <p class="text-xs sm:text-sm text-slate-300">
-          Сделали скриншот? Просто нажмите <kbd class="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-indigo-300 text-xs font-mono">Ctrl + V</kbd> (или <kbd class="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-indigo-300 text-xs font-mono">⌘ + V</kbd>) в любом месте страницы!
-        </p>
-      </div>
-      <div class="text-xs text-slate-400 flex items-center gap-1.5 ml-auto">
-        <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
-        <span>100% приватно (обработка в браузере)</span>
-      </div>
-    </div>
-
-    <!-- Основная 2-колоночная сетка -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-      
-      <!-- ЛЕВАЯ КОЛОНКА: Загрузка, Превью и Настройки -->
-      <div class="flex flex-col gap-4">
+      <!-- Левая колонка: Загрузка и Предобработка -->
+      <div class="lg:col-span-6 flex flex-col gap-5">
         
-        <!-- Карточка загрузки / Просмотра -->
-        <div class="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-5 shadow-xl backdrop-blur-sm flex flex-col">
+        <!-- Дропзона / Холст предпросмотра -->
+        <div class="glass-card rounded-2xl p-4 flex flex-col items-center justify-center min-h-[380px] relative overflow-hidden group">
           
-          <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-            <h2 class="font-semibold text-sm sm:text-base text-slate-200 flex items-center gap-2">
-              <i data-lucide="image" class="w-4 h-4 text-indigo-400"></i>
-              Изображение
-            </h2>
-            <div id="imageInfoBadge" class="hidden text-xs text-slate-400 font-mono bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700/60">
-              0 x 0 px
+          <!-- Зона ожидания файла -->
+          <div id="dropZone" class="w-full h-full border-2 border-dashed border-white/15 hover:border-indigo-500/50 rounded-xl flex flex-col items-center justify-center p-6 text-center cursor-pointer transition-all bg-white/[0.01] hover:bg-white/[0.03]">
+            <input type="file" id="fileInput" accept="image/*" class="hidden">
+            <div class="w-14 h-14 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <i data-lucide="image-up" class="w-7 h-7"></i>
+            </div>
+            <p class="text-base font-medium text-slate-200 mb-1">Перетащите изображение сюда или выберите файл</p>
+            <p class="text-xs text-slate-400 mb-4">Поддерживаются PNG, JPG, WEBP, BMP</p>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-medium text-slate-300">
+              <span>Или нажмите</span>
+              <kbd class="px-1.5 py-0.5 rounded bg-black/40 border border-white/10 font-mono text-[11px] text-indigo-300">Ctrl + V</kbd>
+              <span>для вставки скриншота</span>
             </div>
           </div>
 
-          <!-- Область Drag & Drop (Когда картинки еще нет) -->
-          <div id="dropZone" class="relative group cursor-pointer border-2 border-dashed border-slate-700/80 hover:border-indigo-500/80 rounded-2xl p-8 transition-all duration-300 flex flex-col items-center justify-center text-center bg-slate-950/40 hover:bg-indigo-950/10 min-h-[290px] dropzone-pulse">
-            <input type="file" id="fileInput" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10">
-            
-            <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 group-hover:bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
-              <i data-lucide="cloud-upload" class="w-8 h-8"></i>
+          <!-- Контейнер предпросмотра и кадрирования -->
+          <div id="previewContainer" class="hidden w-full flex flex-col items-center">
+            <div class="relative w-full flex items-center justify-center max-h-[420px] overflow-hidden rounded-lg bg-black/30 border border-white/10 select-none" id="imageWrapper">
+              <img id="previewImg" class="max-w-full max-h-[420px] object-contain transition-all" alt="Предпросмотр">
+              <!-- Оверлей выделения кадрирования -->
+              <div id="cropBox" class="hidden absolute border-2 border-dashed border-indigo-400 shadow-[0_0_0_9999px_rgba(0,0,0,0.65)] pointer-events-none cursor-crosshair"></div>
             </div>
-            <h3 class="text-base font-semibold text-slate-200 mb-1">
-              Перетащите файл сюда или кликните
-            </h3>
-            <p class="text-xs text-slate-400 max-w-xs mb-3">
-              Поддерживаются PNG, JPG, WebP, BMP и снимки экранов
-            </p>
-            <div class="inline-flex items-center gap-2 text-xs font-medium text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-xl border border-indigo-500/20">
-              <i data-lucide="clipboard-paste" class="w-3.5 h-3.5"></i>
-              <span>Или вставьте из буфера обмена</span>
-            </div>
-          </div>
 
-          <!-- Превью и Canvas обработки (Скрыто по умолчанию) -->
-          <div id="previewContainer" class="hidden flex-col gap-3">
-            <div id="canvasViewport" class="relative w-full bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center min-h-[280px] max-h-[420px] select-none touch-none">
-              
-              <!-- Сканирующая полоса во время распознавания -->
-              <div id="scanLine" class="scanner-line hidden z-20"></div>
-              
-              <!-- Canvas, на котором рисуется изображение и применяются фильтры -->
-              <canvas id="previewCanvas" class="max-w-full max-h-[400px] object-contain rounded-lg transition-all"></canvas>
-
-              <!-- Слой интерактивного выделения кадрирования -->
-              <div id="cropInteractiveLayer" class="absolute inset-0 cursor-crosshair hidden z-10">
-                <div id="cropSelectionBox" class="absolute hidden crop-selection-rect"></div>
-              </div>
-
-              <!-- Верхний тулбар поверх превью -->
-              <div class="absolute top-3 right-3 flex items-center gap-1.5 z-20">
-                <button id="toggleCropModeBtn" title="Выделить область (Crop)" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900/90 hover:bg-indigo-600 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/60 transition-all text-xs font-medium shadow-lg">
+            <!-- Тулбар действий над изображением -->
+            <div class="flex flex-wrap items-center justify-between w-full mt-3 gap-2">
+              <div class="flex items-center gap-1.5">
+                <button id="btnToggleCrop" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium flex items-center gap-1.5 transition-colors">
                   <i data-lucide="crop" class="w-3.5 h-3.5"></i>
-                  <span id="cropBtnLabel">Обрезать</span>
+                  <span>Обрезать</span>
                 </button>
-                <button id="restoreOriginalBtn" title="Вернуть исходное фото" class="hidden p-2 bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/60 transition-all">
-                  <i data-lucide="undo" class="w-3.5 h-3.5"></i>
-                </button>
-                <button id="removeImageBtn" title="Удалить изображение" class="p-2 bg-slate-900/90 hover:bg-rose-500/90 text-slate-300 hover:text-white rounded-xl backdrop-blur-md border border-slate-700/60 transition-all">
-                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                <button id="btnResetImage" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-400 hover:text-white transition-colors">
+                  Сбросить кадрирование
                 </button>
               </div>
-
-              <!-- Плавающая панель подтверждения обрезки -->
-              <div id="cropConfirmBar" class="absolute bottom-3 inset-x-0 mx-auto w-max hidden items-center gap-2 px-3 py-1.5 bg-slate-900/95 border border-indigo-500/40 rounded-xl shadow-2xl backdrop-blur-md z-30">
-                <span class="text-xs text-slate-300 mr-1">Область выбрана</span>
-                <button id="applyCropBtn" class="flex items-center gap-1 px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition-all shadow-md">
-                  <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                  Применить
-                </button>
-                <button id="cancelCropBtn" class="flex items-center gap-1 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition-all">
-                  <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                  Отмена
-                </button>
-              </div>
-
+              <button id="btnClearImage" class="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/10 transition-colors text-xs flex items-center gap-1">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                <span>Удалить</span>
+              </button>
             </div>
 
-            <!-- Пресет оптимизации для скриншотов + фильтры -->
-            <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-2.5">
-              <!-- Быстрый режим для скриншотов (Upscale + Авто-контраст) -->
-              <div class="flex items-center justify-between pb-2 border-b border-slate-800/60 flex-wrap gap-2">
-                <label class="flex items-center gap-2 cursor-pointer select-none">
-                  <input type="checkbox" id="screenshotModeToggle" checked class="w-4 h-4 rounded text-indigo-600 bg-slate-900 border-slate-700 focus:ring-indigo-500">
-                  <span class="text-xs font-semibold text-indigo-300 flex items-center gap-1.5">
-                    <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i>
-                    Режим скриншота (HD Upscale 2.5x + Четкость)
-                  </span>
-                </label>
-                <span class="text-[11px] text-slate-400">Устраняет абракадабру в мелком тексте</span>
-              </div>
-
-              <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
-                <span class="flex items-center gap-1.5 text-slate-300">
-                  <i data-lucide="sliders" class="w-3.5 h-3.5 text-indigo-400"></i>
-                  Дополнительная коррекция
-                </span>
-                <button id="resetFiltersBtn" class="text-slate-500 hover:text-slate-300 text-[11px] underline">
-                  Сбросить фильтры
-                </button>
-              </div>
-
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                <button id="filterGrayBtn" class="filter-toggle py-1.5 px-2.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center gap-1.5">
-                  <i data-lucide="circle-dot" class="w-3 h-3"></i>
-                  Ч/Б тон
-                </button>
-                <button id="filterContrastBtn" class="filter-toggle py-1.5 px-2.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center gap-1.5">
-                  <i data-lucide="sun-medium" class="w-3 h-3"></i>
-                  Контраст +
-                </button>
-                <button id="filterBinarizeBtn" class="filter-toggle py-1.5 px-2.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center gap-1.5">
-                  <i data-lucide="binary" class="w-3 h-3"></i>
-                  Четкий текст
-                </button>
-                <button id="filterInvertBtn" title="Обязательно для скриншотов с темной темой!" class="filter-toggle py-1.5 px-2.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center gap-1.5">
-                  <i data-lucide="refresh-ccw" class="w-3 h-3"></i>
-                  Темная тема (Инверсия)
-                </button>
-              </div>
+            <!-- Всплывающая панель подтверждения Crop -->
+            <div id="cropActions" class="hidden flex items-center gap-2 mt-2 w-full justify-center">
+              <button id="btnApplyCrop" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs flex items-center gap-1 shadow-md shadow-indigo-600/30">
+                <i data-lucide="check" class="w-3.5 h-3.5"></i> Применить выделение
+              </button>
+              <button id="btnCancelCrop" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-slate-300 font-medium text-xs">
+                Отмена
+              </button>
             </div>
-
           </div>
+        </div>
 
-          <!-- Настройки OCR и Запуск -->
-          <div class="mt-4 pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            
-            <!-- Выбор языка и структуры (PSM) -->
-            <div class="flex items-center gap-2 flex-wrap">
-              <div class="flex items-center gap-1.5">
-                <label for="langSelect" class="text-xs font-medium text-slate-400 flex items-center gap-1">
-                  <i data-lucide="languages" class="w-3.5 h-3.5 text-indigo-400"></i>
-                  Язык:
-                </label>
-                <select id="langSelect" class="bg-slate-950 border border-slate-800 text-xs sm:text-sm text-slate-200 rounded-xl px-2.5 py-2 focus:outline-none focus:border-indigo-500 transition-colors">
-                  <option value="rus+eng" selected>Русский + English</option>
-                  <option value="rus">Только Русский</option>
-                  <option value="eng">Only English</option>
-                  <option value="deu">Deutsch</option>
-                  <option value="fra">Français</option>
-                </select>
-              </div>
-
-              <div class="flex items-center gap-1.5">
-                <label for="psmSelect" class="text-xs font-medium text-slate-400 flex items-center gap-1" title="Режим сегментации страницы (PSM)">
-                  <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-indigo-400"></i>
-                  Формат:
-                </label>
-                <select id="psmSelect" class="bg-slate-950 border border-slate-800 text-xs sm:text-sm text-slate-200 rounded-xl px-2.5 py-2 focus:outline-none focus:border-indigo-500 transition-colors">
-                  <option value="3" selected>Авто (Страница / Текст)</option>
-                  <option value="6">Единый блок / Код / Консоль</option>
-                  <option value="7">Одна строка / Путь к файлу</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Главная кнопка запуска -->
-            <button id="startOcrBtn" disabled class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium text-sm transition-all shadow-lg shadow-indigo-600/30">
-              <i data-lucide="sparkles" class="w-4 h-4"></i>
-              <span id="startBtnText">Распознать текст</span>
+        <!-- Панель фильтров улучшения читаемости -->
+        <div class="glass-card rounded-2xl p-4 flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Фильтры для нечеткого текста</span>
+            <span class="text-[11px] text-slate-500">Автоматически готовят картинку для OCR</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <button id="filterGrayscale" class="filter-btn px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-300 flex items-center justify-center gap-1.5 transition-all">
+              <i data-lucide="circle-dot" class="w-3.5 h-3.5"></i> Ч/Б тон
             </button>
+            <button id="filterContrast" class="filter-btn px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-300 flex items-center justify-center gap-1.5 transition-all">
+              <i data-lucide="sun" class="w-3.5 h-3.5"></i> Контраст +
+            </button>
+            <button id="filterThreshold" class="filter-btn px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-300 flex items-center justify-center gap-1.5 transition-all">
+              <i data-lucide="binary" class="w-3.5 h-3.5"></i> Четкий текст
+            </button>
+            <button id="filterInvert" class="filter-btn px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-300 flex items-center justify-center gap-1.5 transition-all">
+              <i data-lucide="flip-horizontal" class="w-3.5 h-3.5"></i> Инверсия темы
+            </button>
+          </div>
+        </div>
 
+        <!-- Настройки OCR и кнопка пуска -->
+        <div class="glass-card rounded-2xl p-4 flex flex-col gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1.5">Язык текста</label>
+              <select id="selectLang" class="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-200 text-xs focus:outline-none focus:border-indigo-500">
+                <option value="rus+eng" class="bg-slate-900">Русский + English</option>
+                <option value="rus" class="bg-slate-900">Только Русский</option>
+                <option value="eng" class="bg-slate-900">Только English</option>
+                <option value="deu" class="bg-slate-900">Немецкий</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1.5">Тип структуры (PSM)</label>
+              <select id="selectPSM" class="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-200 text-xs focus:outline-none focus:border-indigo-500">
+                <option value="3" class="bg-slate-900">Авто (Страница / Документ)</option>
+                <option value="6" class="bg-slate-900">Единый блок / Код / Консоль</option>
+                <option value="7" class="bg-slate-900">Одна строка / Системный путь</option>
+              </select>
+            </div>
           </div>
 
           <!-- Индикатор прогресса -->
-          <div id="progressCard" class="hidden mt-4 pt-4 border-t border-slate-800 flex flex-col gap-2">
-            <div class="flex items-center justify-between text-xs">
-              <span id="progressStatusText" class="text-indigo-300 font-medium flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span>
-                Подготовка Tesseract OCR...
-              </span>
-              <span id="progressPercentage" class="font-mono text-slate-400">0%</span>
+          <div id="progressContainer" class="hidden flex flex-col gap-1.5">
+            <div class="flex items-center justify-between text-xs text-slate-300">
+              <span id="progressStatus" class="truncate max-w-[80%]">Загрузка языковой модели...</span>
+              <span id="progressPercent" class="font-mono text-indigo-400">0%</span>
             </div>
-            <div class="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
-              <div id="progressBar" class="bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-400 h-full w-0 transition-all duration-200"></div>
+            <div class="w-full h-2 rounded-full bg-white/10 overflow-hidden relative">
+              <div id="progressBar" class="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-200 w-0"></div>
             </div>
           </div>
 
+          <button id="btnRecognize" disabled class="w-full py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-white/10 disabled:text-slate-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+            <span>Распознать текст</span>
+          </button>
         </div>
 
       </div>
 
-      <!-- ПРАВАЯ КОЛОНКА: Результат распознавания -->
-      <div class="flex flex-col gap-4">
-        
-        <div class="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-5 shadow-xl backdrop-blur-sm flex flex-col min-h-[460px]">
+      <!-- Правая колонка: Редактор результата -->
+      <div class="lg:col-span-6 flex flex-col">
+        <div class="glass-card rounded-2xl p-5 flex flex-col h-full min-h-[500px]">
           
-          <!-- Шапка результата -->
-          <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3 flex-wrap gap-2">
+          <div class="flex items-center justify-between border-b border-white/10 pb-3 mb-3">
             <div class="flex items-center gap-2">
-              <h2 class="font-semibold text-sm sm:text-base text-slate-200 flex items-center gap-2">
-                <i data-lucide="file-text" class="w-4 h-4 text-indigo-400"></i>
-                Распознанный текст
-              </h2>
-              <span id="confidenceTag" class="hidden text-[11px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                Точность: 0%
-              </span>
+              <i data-lucide="file-text" class="w-5 h-5 text-indigo-400"></i>
+              <span class="font-semibold text-sm text-white">Распознанный текст</span>
+              <span id="accuracyBadge" class="hidden text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium"></span>
             </div>
 
-            <!-- Кнопки действий -->
-            <div class="flex items-center gap-1.5">
-              <button id="smartFixBtn" disabled title="Умное исправление путей Windows, слэшей и артефактов OCR" class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-indigo-300 hover:text-white bg-indigo-950/40 hover:bg-indigo-600/50 border border-indigo-500/30 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed">
-                <i data-lucide="wand-2" class="w-3.5 h-3.5 text-indigo-400"></i>
-                <span class="hidden sm:inline">Исправить</span>
+            <div class="flex items-center gap-1">
+              <button id="btnFixRegex" class="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-amber-300 transition-colors" title="Умное исправление системных путей и опечаток">
+                <i data-lucide="wand-2" class="w-4 h-4"></i>
               </button>
-              <button id="copyBtn" disabled title="Скопировать в буфер" class="p-2 text-slate-400 hover:text-white bg-slate-950/80 hover:bg-slate-800 border border-slate-800 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+              <button id="btnCopyText" class="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white transition-colors" title="Копировать в буфер">
                 <i data-lucide="copy" class="w-4 h-4"></i>
               </button>
-              <button id="downloadTxtBtn" disabled title="Скачать как .txt" class="p-2 text-slate-400 hover:text-white bg-slate-950/80 hover:bg-slate-800 border border-slate-800 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+              <button id="btnDownloadTxt" class="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white transition-colors" title="Скачать в .txt">
                 <i data-lucide="download" class="w-4 h-4"></i>
               </button>
-              <button id="cleanSpacesBtn" disabled title="Убрать лишние переносы и пробелы" class="p-2 text-slate-400 hover:text-white bg-slate-950/80 hover:bg-slate-800 border border-slate-800 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed">
-                <i data-lucide="align-left" class="w-4 h-4"></i>
-              </button>
-              <button id="clearTextBtn" disabled title="Очистить" class="p-2 text-slate-400 hover:text-rose-400 bg-slate-950/80 hover:bg-slate-800 border border-slate-800 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+              <button id="btnClearResult" class="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-rose-400 transition-colors" title="Очистить поле">
                 <i data-lucide="eraser" class="w-4 h-4"></i>
               </button>
             </div>
           </div>
 
-          <!-- Текстовое поле результата -->
+          <!-- Текстовое поле -->
           <div class="relative flex-1 flex flex-col">
-            <textarea id="resultTextarea" placeholder="Здесь появится распознанный текст. Вы сможете его отредактировать, скопировать или скачать..." class="w-full flex-1 bg-slate-950/70 border border-slate-800 rounded-xl p-4 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 font-sans text-sm leading-relaxed resize-none min-h-[300px]"></textarea>
+            <textarea id="resultText" placeholder="Здесь появится распознанный текст. Вы сможете его отредактировать, скопировать или скачать в один клик..." class="w-full flex-1 p-3 rounded-xl bg-black/40 border border-white/10 text-slate-200 placeholder-slate-500 text-sm font-mono leading-relaxed focus:outline-none focus:border-indigo-500/70 resize-none custom-scrollbar min-h-[350px]"></textarea>
           </div>
 
-          <!-- Нижняя статистика по тексту -->
-          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
+          <!-- Подвал статистики -->
+          <div class="flex items-center justify-between pt-3 mt-3 border-t border-white/10 text-xs text-slate-400">
             <div class="flex items-center gap-4">
-              <span>Символов: <strong id="statChars" class="text-slate-200 font-mono">0</strong></span>
-              <span>Слов: <strong id="statWords" class="text-slate-200 font-mono">0</strong></span>
-              <span>Строк: <strong id="statLines" class="text-slate-200 font-mono">0</strong></span>
+              <span>Символов: <strong id="statChars" class="text-slate-200">0</strong></span>
+              <span>Слов: <strong id="statWords" class="text-slate-200">0</strong></span>
+              <span>Строк: <strong id="statLines" class="text-slate-200">0</strong></span>
             </div>
-            <div class="text-[11px] text-slate-500">
-              Редактируемое поле
-            </div>
+            <span class="text-[11px] text-slate-500">Редактируемое поле</span>
           </div>
 
         </div>
-
       </div>
 
     </div>
 
-    <!-- БОКОВОЕ ОКНО / МОДАЛКА: Камера -->
-    <div id="cameraModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden items-center justify-center p-4">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col">
-        
-        <div class="p-4 border-b border-slate-800 flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <i data-lucide="camera" class="w-5 h-5 text-indigo-400"></i>
-            <h3 class="font-semibold text-slate-200 text-sm">Сделать снимок с камеры</h3>
-          </div>
-          <button id="cameraModalCloseBtn" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
-            <i data-lucide="x" class="w-5 h-5"></i>
-          </button>
+    <!-- SEO & FAQ блок для поисковиков Яндекса и Google -->
+    <section class="mt-16 border-t border-white/10 pt-10">
+      <h2 class="text-lg font-bold text-white mb-6 text-center">Часто задаваемые вопросы</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="glass-card p-5 rounded-2xl">
+          <h3 class="text-sm font-semibold text-indigo-300 mb-2 flex items-center gap-2">
+            <i data-lucide="shield-check" class="w-4 h-4"></i> Безопасно ли загружать документы?
+          </h3>
+          <p class="text-xs text-slate-400 leading-relaxed">Да, на 100%. Сервис LensText OCR работает прямо в вашем браузере с помощью технологии WebAssembly. Изображения никогда не отправляются на удаленные серверы.</p>
         </div>
-
-        <div class="relative bg-black flex items-center justify-center aspect-video overflow-hidden">
-          <video id="webcamVideo" autoplay playsinline class="w-full h-full object-cover"></video>
-          <div id="cameraLoading" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 gap-2 bg-slate-950">
-            <i data-lucide="loader-2" class="w-6 h-6 animate-spin text-indigo-500"></i>
-            <span class="text-xs">Запуск камеры...</span>
-          </div>
+        <div class="glass-card p-5 rounded-2xl">
+          <h3 class="text-sm font-semibold text-indigo-300 mb-2 flex items-center gap-2">
+            <i data-lucide="clipboard-paste" class="w-4 h-4"></i> Как вставить скриншот по Ctrl+V?
+          </h3>
+          <p class="text-xs text-slate-400 leading-relaxed">Сделайте снимок экрана в Windows (Win+Shift+S) или macOS (Cmd+Shift+4) и просто нажмите Ctrl+V в любом месте открытой страницы.</p>
         </div>
-
-        <div class="p-4 bg-slate-950 flex items-center justify-between">
-          <span class="text-xs text-slate-400">Наведите камеру на текст документа или экрана</span>
-          <button id="capturePhotoBtn" class="flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs sm:text-sm shadow-lg shadow-indigo-600/30">
-            <i data-lucide="aperture" class="w-4 h-4"></i>
-            Сделать снимок
-          </button>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- ВСПЛЫВАЮЩАЯ ПАНЕЛЬ: История распознаваний -->
-    <div id="historyDrawer" class="fixed inset-y-0 right-0 w-full sm:w-96 bg-slate-900 border-l border-slate-800 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 flex flex-col">
-      <div class="p-4 border-b border-slate-800 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <i data-lucide="history" class="w-5 h-5 text-indigo-400"></i>
-          <h3 class="font-semibold text-slate-200 text-sm">Недавние распознавания</h3>
-        </div>
-        <div class="flex items-center gap-1">
-          <button id="clearAllHistoryBtn" title="Очистить историю" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800">
-            <i data-lucide="trash-2" class="w-4 h-4"></i>
-          </button>
-          <button id="historyDrawerCloseBtn" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
-            <i data-lucide="x" class="w-5 h-5"></i>
-          </button>
+        <div class="glass-card p-5 rounded-2xl">
+          <h3 class="text-sm font-semibold text-indigo-300 mb-2 flex items-center gap-2">
+            <i data-lucide="sliders" class="w-4 h-4"></i> Что делать, если буквы сливаются?
+          </h3>
+          <p class="text-xs text-slate-400 leading-relaxed">Используйте кнопку «Инверсия» для темных тем, кнопку «Контраст +» для бледного текста, либо выделите нужный фрагмент через «Обрезать».</p>
         </div>
       </div>
-
-      <!-- Список истории -->
-      <div id="historyList" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-        <!-- Заполняется динамически -->
-      </div>
-    </div>
-
-    <!-- Затемнение для панели истории -->
-    <div id="historyOverlay" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 hidden"></div>
-
-    <!-- Всплывающие уведомления (Toast) -->
-    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
+    </section>
   </main>
 
-  <!-- Подвал сайта -->
-  <footer class="border-t border-slate-900 bg-slate-950/60 py-4 text-center text-xs text-slate-500">
-    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-      <p>LensText OCR — клиентское распознавание изображений без передачи данных на сервер.</p>
-      <p class="font-mono text-[11px] text-slate-600">Движок: Tesseract.js v5</p>
+  <!-- Модальное окно истории -->
+  <div id="modalHistory" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-lg rounded-2xl p-5 border border-white/15 flex flex-col max-h-[80vh]">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="history" class="w-4 h-4 text-indigo-400"></i> История распознаваний
+        </h3>
+        <button id="btnCloseHistory" class="p-1 rounded-lg text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div id="historyList" class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-2 pr-1"></div>
+      <div class="pt-3 border-t border-white/10 flex justify-between items-center mt-3">
+        <button id="btnClearAllHistory" class="text-xs text-rose-400 hover:underline">Очистить историю</button>
+        <span class="text-[11px] text-slate-500">Хранится локально на устройстве</span>
+      </div>
     </div>
-  </footer>
+  </div>
 
-  <!-- Основная логика приложения -->
+  <!-- Всплывающий Toast для уведомлений -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-12 opacity-0 transition-all duration-300 pointer-events-none px-4 py-2.5 rounded-xl bg-slate-900 border border-white/20 text-white text-xs font-medium shadow-2xl flex items-center gap-2">
+    <i id="toastIcon" data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+    <span id="toastMessage">Готово</span>
+  </div>
+
   <script>
     // Инициализация Lucide иконок
-    document.addEventListener("DOMContentLoaded", () => {
-      lucide.createIcons();
-    });
+    lucide.createIcons();
 
-    // Элементы интерфейса
-    const fileInput = document.getElementById('fileInput');
+    // DOM Элементы
     const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
     const previewContainer = document.getElementById('previewContainer');
-    const canvasViewport = document.getElementById('canvasViewport');
-    const previewCanvas = document.getElementById('previewCanvas');
-    const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
-    const removeImageBtn = document.getElementById('removeImageBtn');
-    const restoreOriginalBtn = document.getElementById('restoreOriginalBtn');
-    const imageInfoBadge = document.getElementById('imageInfoBadge');
-    const scanLine = document.getElementById('scanLine');
-
-    // Элементы кадрирования (Crop)
-    const toggleCropModeBtn = document.getElementById('toggleCropModeBtn');
-    const cropBtnLabel = document.getElementById('cropBtnLabel');
-    const cropInteractiveLayer = document.getElementById('cropInteractiveLayer');
-    const cropSelectionBox = document.getElementById('cropSelectionBox');
-    const cropConfirmBar = document.getElementById('cropConfirmBar');
-    const applyCropBtn = document.getElementById('applyCropBtn');
-    const cancelCropBtn = document.getElementById('cancelCropBtn');
-
-    // Кнопки фильтров и пресетов
-    const screenshotModeToggle = document.getElementById('screenshotModeToggle');
-    const filterGrayBtn = document.getElementById('filterGrayBtn');
-    const filterContrastBtn = document.getElementById('filterContrastBtn');
-    const filterBinarizeBtn = document.getElementById('filterBinarizeBtn');
-    const filterInvertBtn = document.getElementById('filterInvertBtn');
-    const resetFiltersBtn = document.getElementById('resetFiltersBtn');
-
-    // OCR элементы
-    const langSelect = document.getElementById('langSelect');
-    const psmSelect = document.getElementById('psmSelect');
-    const startOcrBtn = document.getElementById('startOcrBtn');
-    const startBtnText = document.getElementById('startBtnText');
-    const progressCard = document.getElementById('progressCard');
+    const previewImg = document.getElementById('previewImg');
+    const imageWrapper = document.getElementById('imageWrapper');
+    const cropBox = document.getElementById('cropBox');
+    const cropActions = document.getElementById('cropActions');
+    const btnToggleCrop = document.getElementById('btnToggleCrop');
+    const btnApplyCrop = document.getElementById('btnApplyCrop');
+    const btnCancelCrop = document.getElementById('btnCancelCrop');
+    const btnResetImage = document.getElementById('btnResetImage');
+    const btnClearImage = document.getElementById('btnClearImage');
+    const btnRecognize = document.getElementById('btnRecognize');
+    const progressContainer = document.getElementById('progressContainer');
     const progressBar = document.getElementById('progressBar');
-    const progressPercentage = document.getElementById('progressPercentage');
-    const progressStatusText = document.getElementById('progressStatusText');
-
-    // Результат и действия
-    const resultTextarea = document.getElementById('resultTextarea');
-    const confidenceTag = document.getElementById('confidenceTag');
-    const smartFixBtn = document.getElementById('smartFixBtn');
-    const copyBtn = document.getElementById('copyBtn');
-    const downloadTxtBtn = document.getElementById('downloadTxtBtn');
-    const cleanSpacesBtn = document.getElementById('cleanSpacesBtn');
-    const clearTextBtn = document.getElementById('clearTextBtn');
+    const progressStatus = document.getElementById('progressStatus');
+    const progressPercent = document.getElementById('progressPercent');
+    const resultText = document.getElementById('resultText');
     const statChars = document.getElementById('statChars');
     const statWords = document.getElementById('statWords');
     const statLines = document.getElementById('statLines');
+    const accuracyBadge = document.getElementById('accuracyBadge');
+    const btnCopyText = document.getElementById('btnCopyText');
+    const btnDownloadTxt = document.getElementById('btnDownloadTxt');
+    const btnClearResult = document.getElementById('btnClearResult');
+    const btnFixRegex = document.getElementById('btnFixRegex');
 
-    // Камера
-    const cameraModal = document.getElementById('cameraModal');
-    const cameraModalOpenBtn = document.getElementById('cameraModalOpenBtn');
-    const cameraModalCloseBtn = document.getElementById('cameraModalCloseBtn');
-    const webcamVideo = document.getElementById('webcamVideo');
-    const cameraLoading = document.getElementById('cameraLoading');
-    const capturePhotoBtn = document.getElementById('capturePhotoBtn');
-    let videoStream = null;
-
-    // История
-    const historyToggleBtn = document.getElementById('historyToggleBtn');
-    const historyDrawer = document.getElementById('historyDrawer');
-    const historyDrawerCloseBtn = document.getElementById('historyDrawerCloseBtn');
-    const historyOverlay = document.getElementById('historyOverlay');
-    const historyList = document.getElementById('historyList');
-    const historyBadge = document.getElementById('historyBadge');
-    const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
-
-    // Состояние изображений и кадрирования
-    let rawOriginalImage = null; // Неизменный оригинал
-    let currentImage = null;    // Текущий рабочий кадр (может быть обрезан)
-    let isCropMode = false;
-    let isDraggingCrop = false;
+    // Состояние фильтров и кадрирования
+    let originalImageSrc = null;
+    let croppedImageSrc = null;
+    let isCroppingActive = false;
     let cropStart = { x: 0, y: 0 };
-    let cropBoxCoords = null; // { x, y, width, height } в пикселях canvas
+    let cropRect = { x: 0, y: 0, w: 0, h: 0 };
+    let isMouseDown = false;
 
-    let filters = {
+    const filters = {
       grayscale: false,
       contrast: false,
-      binarize: false,
+      threshold: false,
       invert: false
     };
 
-    // Всплывающее уведомление (Toast)
-    function showToast(message, type = 'info') {
-      const container = document.getElementById('toastContainer');
-      const toast = document.createElement('div');
-      
-      const bgColors = {
-        success: 'bg-emerald-950/90 border-emerald-500/30 text-emerald-200',
-        error: 'bg-rose-950/90 border-rose-500/30 text-rose-200',
-        info: 'bg-indigo-950/90 border-indigo-500/30 text-indigo-200'
-      };
-
-      const iconName = type === 'success' ? 'check-circle' : type === 'error' ? 'alert-triangle' : 'info';
-
-      toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl border text-xs sm:text-sm shadow-xl backdrop-blur-md transition-all duration-300 transform translate-y-3 opacity-0 ${bgColors[type] || bgColors.info}`;
-      toast.innerHTML = `
-        <i data-lucide="${iconName}" class="w-4 h-4 shrink-0"></i>
-        <span>${message}</span>
-      `;
-      
-      container.appendChild(toast);
-      lucide.createIcons({ root: toast });
-
-      requestAnimationFrame(() => {
-        toast.classList.remove('translate-y-3', 'opacity-0');
-      });
-
+    // Всплывающие уведомления (Toast)
+    function showToast(msg, icon = 'check', isError = false) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+      toastMsg.innerText = msg;
+      toastIcon.setAttribute('data-lucide', icon);
+      toastIcon.className = `w-4 h-4 ${isError ? 'text-rose-400' : 'text-emerald-400'}`;
+      lucide.createIcons();
+      toast.classList.remove('translate-y-12', 'opacity-0');
       setTimeout(() => {
-        toast.classList.add('opacity-0', 'translate-y-2');
-        setTimeout(() => toast.remove(), 300);
-      }, 3500);
+        toast.classList.add('translate-y-12', 'opacity-0');
+      }, 3000);
     }
 
-    // Загрузка изображения из файла
-    function loadImageFromFile(file) {
+    // Обработка загрузки файла
+    function loadFile(file) {
       if (!file || !file.type.startsWith('image/')) {
-        showToast('Пожалуйста, выберите файл изображения (PNG, JPG, WebP и т.д.)', 'error');
+        showToast('Пожалуйста, выберите файл изображения', 'alert-circle', true);
         return;
       }
-
       const reader = new FileReader();
       reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          rawOriginalImage = img;
-          currentImage = img;
-          restoreOriginalBtn.classList.add('hidden');
-          resetAllFilters();
-          disableCropMode();
-          renderCanvas();
-          dropZone.classList.add('hidden');
-          previewContainer.classList.remove('hidden');
-          previewContainer.classList.add('flex');
-          startOcrBtn.disabled = false;
-          
-          imageInfoBadge.textContent = `${img.naturalWidth} × ${img.naturalHeight} px`;
-          imageInfoBadge.classList.remove('hidden');
-          showToast('Изображение загружено! Вы можете обрезать нужную область', 'success');
-        };
-        img.src = e.target.result;
+        originalImageSrc = e.target.result;
+        croppedImageSrc = originalImageSrc;
+        displayImage(croppedImageSrc);
       };
       reader.readAsDataURL(file);
     }
 
-    // Отрисовка на основном Canvas
-    function renderCanvas() {
-      if (!currentImage) return;
-
-      const w = currentImage.naturalWidth || currentImage.width;
-      const h = currentImage.naturalHeight || currentImage.height;
-      previewCanvas.width = w;
-      previewCanvas.height = h;
-
-      ctx.drawImage(currentImage, 0, 0, w, h);
-
-      if (!filters.grayscale && !filters.contrast && !filters.binarize && !filters.invert) {
-        return;
-      }
-
-      const imgData = ctx.getImageData(0, 0, w, h);
-      const data = imgData.data;
-
-      for (let i = 0; i < data.length; i += 4) {
-        let r = data[i];
-        let g = data[i + 1];
-        let b = data[i + 2];
-
-        // 1. Grayscale
-        if (filters.grayscale || filters.binarize) {
-          const v = 0.299 * r + 0.587 * g + 0.114 * b;
-          r = g = b = v;
-        }
-
-        // 2. High Contrast
-        if (filters.contrast) {
-          const factor = (259 * (128 + 255)) / (255 * (259 - 128));
-          r = Math.min(255, Math.max(0, factor * (r - 128) + 128));
-          g = Math.min(255, Math.max(0, factor * (g - 128) + 128));
-          b = Math.min(255, Math.max(0, factor * (b - 128) + 128));
-        }
-
-        // 3. Binarize (порог)
-        if (filters.binarize) {
-          const avg = (r + g + b) / 3;
-          const val = avg > 135 ? 255 : 0;
-          r = g = b = val;
-        }
-
-        // 4. Invert (критично для темных тем Windows/IDE)
-        if (filters.invert) {
-          r = 255 - r;
-          g = 255 - g;
-          b = 255 - b;
-        }
-
-        data[i] = r;
-        data[i + 1] = g;
-        data[i + 2] = b;
-      }
-
-      ctx.putImageData(imgData, 0, 0);
+    function displayImage(src) {
+      previewImg.src = src;
+      dropZone.classList.add('hidden');
+      previewContainer.classList.remove('hidden');
+      btnRecognize.disabled = false;
+      applyVisualFilters();
     }
 
-    // ==========================================
-    // ЛОГИКА КАДРИРОВАНИЯ (CROP)
-    // ==========================================
-    function enableCropMode() {
-      if (!currentImage) return;
-      isCropMode = true;
-      cropInteractiveLayer.classList.remove('hidden');
-      toggleCropModeBtn.classList.add('!bg-indigo-600', '!text-white');
-      cropBtnLabel.textContent = 'Выделение...';
-      showToast('Выделите курсором или пальцем нужный фрагмент текста', 'info');
-    }
-
-    function disableCropMode() {
-      isCropMode = false;
-      isDraggingCrop = false;
-      cropInteractiveLayer.classList.add('hidden');
-      cropSelectionBox.classList.add('hidden');
-      cropConfirmBar.classList.add('hidden');
-      cropConfirmBar.classList.remove('flex');
-      toggleCropModeBtn.classList.remove('!bg-indigo-600', '!text-white');
-      cropBtnLabel.textContent = 'Обрезать';
-      cropBoxCoords = null;
-    }
-
-    toggleCropModeBtn.addEventListener('click', () => {
-      if (!isCropMode) {
-        enableCropMode();
-      } else {
-        disableCropMode();
-      }
-    });
-
-    // Расчет координат касания/мыши относительно холста
-    function getLayerPointerPos(e) {
-      const rect = cropInteractiveLayer.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      return {
-        x: Math.max(0, Math.min(rect.width, clientX - rect.left)),
-        y: Math.max(0, Math.min(rect.height, clientY - rect.top)),
-        totalW: rect.width,
-        totalH: rect.height
-      };
-    }
-
-    function startCropSelection(e) {
-      if (!isCropMode) return;
-      e.preventDefault();
-      isDraggingCrop = true;
-      const pos = getLayerPointerPos(e);
-      cropStart = { x: pos.x, y: pos.y };
-      
-      cropSelectionBox.style.left = `${pos.x}px`;
-      cropSelectionBox.style.top = `${pos.y}px`;
-      cropSelectionBox.style.width = '0px';
-      cropSelectionBox.style.height = '0px';
-      cropSelectionBox.classList.remove('hidden');
-      cropConfirmBar.classList.add('hidden');
-      cropConfirmBar.classList.remove('flex');
-    }
-
-    function moveCropSelection(e) {
-      if (!isDraggingCrop || !isCropMode) return;
-      e.preventDefault();
-      const pos = getLayerPointerPos(e);
-
-      const left = Math.min(cropStart.x, pos.x);
-      const top = Math.min(cropStart.y, pos.y);
-      const width = Math.abs(pos.x - cropStart.x);
-      const height = Math.abs(pos.y - cropStart.y);
-
-      cropSelectionBox.style.left = `${left}px`;
-      cropSelectionBox.style.top = `${top}px`;
-      cropSelectionBox.style.width = `${width}px`;
-      cropSelectionBox.style.height = `${height}px`;
-    }
-
-    function endCropSelection(e) {
-      if (!isDraggingCrop || !isCropMode) return;
-      isDraggingCrop = false;
-
-      const layerRect = cropInteractiveLayer.getBoundingClientRect();
-      const canvasRect = previewCanvas.getBoundingClientRect();
-
-      // Геометрия выделения в координатах экрана
-      const boxLeft = parseFloat(cropSelectionBox.style.left) || 0;
-      const boxTop = parseFloat(cropSelectionBox.style.top) || 0;
-      const boxWidth = parseFloat(cropSelectionBox.style.width) || 0;
-      const boxHeight = parseFloat(cropSelectionBox.style.height) || 0;
-
-      // Игнорируем случайные микроклики
-      if (boxWidth < 15 || boxHeight < 15) {
-        cropSelectionBox.classList.add('hidden');
-        return;
-      }
-
-      // Пересчитываем координаты относительно реальных пикселей canvas
-      const scaleX = previewCanvas.width / canvasRect.width;
-      const scaleY = previewCanvas.height / canvasRect.height;
-
-      // Смещение canvas внутри контейнера (из-за центрирования flex)
-      const canvasOffsetX = canvasRect.left - layerRect.left;
-      const canvasOffsetY = canvasRect.top - layerRect.top;
-
-      const realX = Math.max(0, (boxLeft - canvasOffsetX) * scaleX);
-      const realY = Math.max(0, (boxTop - canvasOffsetY) * scaleY);
-      const realW = Math.min(previewCanvas.width - realX, boxWidth * scaleX);
-      const realH = Math.min(previewCanvas.height - realY, boxHeight * scaleY);
-
-      if (realW <= 0 || realH <= 0) return;
-
-      cropBoxCoords = {
-        x: Math.round(realX),
-        y: Math.round(realY),
-        width: Math.round(realW),
-        height: Math.round(realH)
-      };
-
-      cropConfirmBar.classList.remove('hidden');
-      cropConfirmBar.classList.add('flex');
-    }
-
-    cropInteractiveLayer.addEventListener('mousedown', startCropSelection);
-    window.addEventListener('mousemove', moveCropSelection);
-    window.addEventListener('mouseup', endCropSelection);
-
-    cropInteractiveLayer.addEventListener('touchstart', startCropSelection, { passive: false });
-    window.addEventListener('touchmove', moveCropSelection, { passive: false });
-    window.addEventListener('touchend', endCropSelection);
-
-    // Применение обрезки
-    applyCropBtn.addEventListener('click', () => {
-      if (!cropBoxCoords || cropBoxCoords.width < 5 || cropBoxCoords.height < 5) {
-        showToast('Выделите достаточную область для обрезки', 'error');
-        return;
-      }
-
-      const croppedCanvas = document.createElement('canvas');
-      croppedCanvas.width = cropBoxCoords.width;
-      croppedCanvas.height = cropBoxCoords.height;
-      const cCtx = croppedCanvas.getContext('2d');
-
-      // Вырезаем прямоугольник из текущего canvas
-      cCtx.drawImage(
-        previewCanvas,
-        cropBoxCoords.x, cropBoxCoords.y, cropBoxCoords.width, cropBoxCoords.height,
-        0, 0, cropBoxCoords.width, cropBoxCoords.height
-      );
-
-      const croppedImg = new Image();
-      croppedImg.onload = () => {
-        currentImage = croppedImg;
-        restoreOriginalBtn.classList.remove('hidden');
-        imageInfoBadge.textContent = `${croppedImg.naturalWidth} × ${croppedImg.naturalHeight} px (Обрезано)`;
-        disableCropMode();
-        renderCanvas();
-        showToast('Область успешно вырезана!', 'success');
-      };
-      croppedImg.src = croppedCanvas.toDataURL('image/png');
-    });
-
-    cancelCropBtn.addEventListener('click', disableCropMode);
-
-    // Возврат к полному исходному изображению
-    restoreOriginalBtn.addEventListener('click', () => {
-      if (rawOriginalImage) {
-        currentImage = rawOriginalImage;
-        restoreOriginalBtn.classList.add('hidden');
-        imageInfoBadge.textContent = `${rawOriginalImage.naturalWidth} × ${rawOriginalImage.naturalHeight} px`;
-        disableCropMode();
-        renderCanvas();
-        showToast('Исходное изображение восстановлено', 'info');
-      }
-    });
-
-    // Фильтры предобработки
-    function resetAllFilters() {
-      filters = { grayscale: false, contrast: false, binarize: false, invert: false };
-      updateFilterButtonsUI();
-    }
-
-    function updateFilterButtonsUI() {
-      const activeClass = ['!border-indigo-500', '!text-indigo-300', '!bg-indigo-950/40'];
-      const toggle = (btn, state) => {
-        if (state) btn.classList.add(...activeClass);
-        else btn.classList.remove(...activeClass);
-      };
-
-      toggle(filterGrayBtn, filters.grayscale);
-      toggle(filterContrastBtn, filters.contrast);
-      toggle(filterBinarizeBtn, filters.binarize);
-      toggle(filterInvertBtn, filters.invert);
-    }
-
-    filterGrayBtn.addEventListener('click', () => {
-      filters.grayscale = !filters.grayscale;
-      updateFilterButtonsUI();
-      renderCanvas();
-    });
-
-    filterContrastBtn.addEventListener('click', () => {
-      filters.contrast = !filters.contrast;
-      updateFilterButtonsUI();
-      renderCanvas();
-    });
-
-    filterBinarizeBtn.addEventListener('click', () => {
-      filters.binarize = !filters.binarize;
-      updateFilterButtonsUI();
-      renderCanvas();
-    });
-
-    filterInvertBtn.addEventListener('click', () => {
-      filters.invert = !filters.invert;
-      updateFilterButtonsUI();
-      renderCanvas();
-    });
-
-    resetFiltersBtn.addEventListener('click', () => {
-      resetAllFilters();
-      renderCanvas();
-    });
-
-    // Очистка выбранного изображения
-    function resetImage() {
-      currentImage = null;
-      rawOriginalImage = null;
-      disableCropMode();
-      ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-      previewContainer.classList.add('hidden');
-      previewContainer.classList.remove('flex');
-      dropZone.classList.remove('hidden');
-      fileInput.value = '';
-      imageInfoBadge.classList.add('hidden');
-      startOcrBtn.disabled = true;
-      scanLine.classList.add('hidden');
-      restoreOriginalBtn.classList.add('hidden');
-    }
-
-    removeImageBtn.addEventListener('click', resetImage);
-
-    // Выбор файла через проводник
-    fileInput.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files[0]) {
-        loadImageFromFile(e.target.files[0]);
-      }
-    });
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => loadFile(e.target.files[0]));
 
     // Drag and Drop
-    ['dragenter', 'dragover'].forEach(name => {
-      dropZone.addEventListener(name, (e) => {
-        e.preventDefault();
-        dropZone.classList.add('border-indigo-500', 'bg-indigo-950/20');
-      });
+    window.addEventListener('dragover', (e) => e.preventDefault());
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-indigo-500');
     });
-
-    ['dragleave', 'drop'].forEach(name => {
-      dropZone.addEventListener(name, (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('border-indigo-500', 'bg-indigo-950/20');
-      });
-    });
-
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-indigo-500'));
     dropZone.addEventListener('drop', (e) => {
-      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
-        loadImageFromFile(e.dataTransfer.files[0]);
-      }
+      e.preventDefault();
+      dropZone.classList.remove('border-indigo-500');
+      if (e.dataTransfer.files.length > 0) loadFile(e.dataTransfer.files[0]);
     });
 
-    // Вставка из буфера обмена (Ctrl + V / Cmd + V) в любом месте страницы
+    // Вставка из буфера обмена (Ctrl + V)
     window.addEventListener('paste', (e) => {
       const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-      let foundImage = false;
-
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf('image') !== -1) {
-          const blob = items[i].getAsFile();
-          loadImageFromFile(blob);
-          foundImage = true;
-          showToast('Скриншот вставлен из буфера обмена!', 'info');
+      for (let item of items) {
+        if (item.type.indexOf('image') !== -1) {
+          const file = item.getAsFile();
+          loadFile(file);
+          showToast('Скриншот вставлен из буфера');
           break;
         }
       }
-
-      if (!foundImage && document.activeElement !== resultTextarea) {
-        showToast('В буфере обмена нет изображения', 'info');
-      }
     });
 
-    // ВЕБ-КАМЕРА: Снимок с камеры
-    cameraModalOpenBtn.addEventListener('click', async () => {
-      cameraModal.classList.remove('hidden');
-      cameraModal.classList.add('flex');
-      cameraLoading.classList.remove('hidden');
-      
-      try {
-        videoStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
-          audio: false
-        });
-        webcamVideo.srcObject = videoStream;
-        cameraLoading.classList.add('hidden');
-      } catch (err) {
-        cameraLoading.classList.add('hidden');
-        showToast('Не удалось получить доступ к камере: ' + err.message, 'error');
-        closeCamera();
-      }
+    // Очистка изображения
+    btnClearImage.addEventListener('click', () => {
+      originalImageSrc = null;
+      croppedImageSrc = null;
+      previewImg.src = '';
+      dropZone.classList.remove('hidden');
+      previewContainer.classList.add('hidden');
+      btnRecognize.disabled = true;
+      resetFilters();
     });
 
-    function closeCamera() {
-      if (videoStream) {
-        videoStream.getTracks().forEach(track => track.stop());
-        videoStream = null;
-      }
-      cameraModal.classList.add('hidden');
-      cameraModal.classList.remove('flex');
+    btnResetImage.addEventListener('click', () => {
+      if (!originalImageSrc) return;
+      croppedImageSrc = originalImageSrc;
+      previewImg.src = originalImageSrc;
+      applyVisualFilters();
+      showToast('Исходное фото возвращено');
+    });
+
+    // Фильтры предобработки
+    function setupFilterBtn(id, key) {
+      const btn = document.getElementById(id);
+      btn.addEventListener('click', () => {
+        filters[key] = !filters[key];
+        btn.classList.toggle('bg-indigo-600', filters[key]);
+        btn.classList.toggle('text-white', filters[key]);
+        applyVisualFilters();
+      });
+    }
+    setupFilterBtn('filterGrayscale', 'grayscale');
+    setupFilterBtn('filterContrast', 'contrast');
+    setupFilterBtn('filterThreshold', 'threshold');
+    setupFilterBtn('filterInvert', 'invert');
+
+    function resetFilters() {
+      for (let k in filters) filters[k] = false;
+      document.querySelectorAll('.filter-btn').forEach(b => {
+        b.classList.remove('bg-indigo-600', 'text-white');
+      });
+      applyVisualFilters();
     }
 
-    cameraModalCloseBtn.addEventListener('click', closeCamera);
+    function applyVisualFilters() {
+      let f = [];
+      if (filters.grayscale) f.push('grayscale(100%)');
+      if (filters.contrast) f.push('contrast(180%)');
+      if (filters.threshold) f.push('contrast(250%) grayscale(100%)');
+      if (filters.invert) f.push('invert(100%)');
+      previewImg.style.filter = f.join(' ');
+    }
 
-    capturePhotoBtn.addEventListener('click', () => {
-      if (!webcamVideo.videoWidth) return;
-      const snapCanvas = document.createElement('canvas');
-      snapCanvas.width = webcamVideo.videoWidth;
-      snapCanvas.height = webcamVideo.videoHeight;
-      const snapCtx = snapCanvas.getContext('2d');
-      snapCtx.drawImage(webcamVideo, 0, 0);
-
-      snapCanvas.toBlob((blob) => {
-        loadImageFromFile(blob);
-        closeCamera();
-      }, 'image/jpeg', 0.95);
+    // Режим кадрирования (Crop)
+    btnToggleCrop.addEventListener('click', () => {
+      isCroppingActive = !isCroppingActive;
+      cropBox.classList.toggle('hidden', !isCroppingActive);
+      cropActions.classList.toggle('hidden', !isCroppingActive);
+      imageWrapper.style.cursor = isCroppingActive ? 'crosshair' : 'default';
     });
 
-    // =========================================================================
-    // ПОДГОТОВКА ИЗОБРАЖЕНИЯ (Upscale 2.5x + Белый паддинг 30px для краев)
-    // =========================================================================
+    btnCancelCrop.addEventListener('click', () => {
+      isCroppingActive = false;
+      cropBox.classList.add('hidden');
+      cropActions.classList.add('hidden');
+      imageWrapper.style.cursor = 'default';
+    });
+
+    imageWrapper.addEventListener('mousedown', (e) => {
+      if (!isCroppingActive) return;
+      isMouseDown = true;
+      const rect = imageWrapper.getBoundingClientRect();
+      cropStart.x = e.clientX - rect.left;
+      cropStart.y = e.clientY - rect.top;
+      cropBox.style.left = cropStart.x + 'px';
+      cropBox.style.top = cropStart.y + 'px';
+      cropBox.style.width = '0px';
+      cropBox.style.height = '0px';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isCroppingActive || !isMouseDown) return;
+      const rect = imageWrapper.getBoundingClientRect();
+      const curX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+      const curY = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+
+      cropRect.x = Math.min(curX, cropStart.x);
+      cropRect.y = Math.min(curY, cropStart.y);
+      cropRect.w = Math.abs(curX - cropStart.x);
+      cropRect.h = Math.abs(curY - cropStart.y);
+
+      cropBox.style.left = cropRect.x + 'px';
+      cropBox.style.top = cropRect.y + 'px';
+      cropBox.style.width = cropRect.w + 'px';
+      cropBox.style.height = cropRect.h + 'px';
+    });
+
+    window.addEventListener('mouseup', () => { isMouseDown = false; });
+
+    btnApplyCrop.addEventListener('click', () => {
+      if (cropRect.w < 10 || cropRect.h < 10) {
+        showToast('Выделите область большего размера', 'alert-circle', true);
+        return;
+      }
+      const scaleX = previewImg.naturalWidth / previewImg.clientWidth;
+      const scaleY = previewImg.naturalHeight / previewImg.clientHeight;
+      const canvas = document.createElement('canvas');
+      canvas.width = cropRect.w * scaleX;
+      canvas.height = cropRect.h * scaleY;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(
+        previewImg,
+        cropRect.x * scaleX, cropRect.y * scaleY, canvas.width, canvas.height,
+        0, 0, canvas.width, canvas.height
+      );
+      croppedImageSrc = canvas.toDataURL();
+      previewImg.src = croppedImageSrc;
+      btnCancelCrop.click();
+      showToast('Область успешно обрезана');
+    });
+
+    // ПОДГОТОВКА ИЗОБРАЖЕНИЯ С ЗАЩИТОЙ ПАМЯТИ (Anti-Crash Clamp)
     function prepareOptimizedImageForOCR() {
-      const srcW = previewCanvas.width;
-      const srcH = previewCanvas.height;
+      const offCanvas = document.createElement('canvas');
+      const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+      const img = previewImg;
 
-      // Масштабирование: если режим скриншота активен - 2.5x
-      const scale = screenshotModeToggle.checked ? 2.5 : 1.0;
-      const scaledW = Math.round(srcW * scale);
-      const scaledH = Math.round(srcH * scale);
+      let scale = 1.0;
+      const maxDim = Math.max(img.naturalWidth, img.naturalHeight);
 
-      // Паддинг (белая рамка вокруг изображения) - устраняет потерю крайних букв движком
-      const padding = 30;
-      
-      const offscreen = document.createElement('canvas');
-      offscreen.width = scaledW + padding * 2;
-      offscreen.height = scaledH + padding * 2;
-      const oCtx = offscreen.getContext('2d');
-
-      // 1. Заливаем весь холст чистым белым цветом
-      oCtx.fillStyle = '#FFFFFF';
-      oCtx.fillRect(0, 0, offscreen.width, offscreen.height);
-
-      // 2. Отрисовываем отмасштабированное изображение с отступом
-      oCtx.imageSmoothingEnabled = true;
-      oCtx.imageSmoothingQuality = 'high';
-      oCtx.drawImage(previewCanvas, 0, 0, srcW, srcH, padding, padding, scaledW, scaledH);
-
-      // 3. Дополнительная четкость при активном режиме скриншота
-      if (screenshotModeToggle.checked) {
-        const imgData = oCtx.getImageData(0, 0, offscreen.width, offscreen.height);
-        const d = imgData.data;
-        const contrastFactor = 1.35;
-
-        for (let i = 0; i < d.length; i += 4) {
-          const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-          const contrasted = Math.min(255, Math.max(0, (gray - 128) * contrastFactor + 128));
-          d[i] = contrasted;
-          d[i + 1] = contrasted;
-          d[i + 2] = contrasted;
-        }
-        oCtx.putImageData(imgData, 0, 0);
+      // Умный Clamp: мелкие скриншоты увеличиваем, гигантские фото со смартфонов сжимаем
+      if (maxDim < 900) {
+        scale = 2.0; // апскейл для мелкого шрифта
+      } else if (maxDim > 2000) {
+        scale = 1800 / maxDim; // сжатие во избежание краша Tesseract на мобильных устройствах
       }
 
-      return offscreen.toDataURL('image/png');
+      const targetW = Math.round(img.naturalWidth * scale);
+      const targetH = Math.round(img.naturalHeight * scale);
+
+      // Белый паддинг (+30px со всех сторон)
+      const padding = 30;
+      offCanvas.width = targetW + padding * 2;
+      offCanvas.height = targetH + padding * 2;
+
+      offCtx.fillStyle = '#ffffff';
+      offCtx.fillRect(0, 0, offCanvas.width, offCanvas.height);
+      offCtx.imageSmoothingEnabled = true;
+      offCtx.imageSmoothingQuality = 'high';
+
+      offCtx.drawImage(img, padding, padding, targetW, targetH);
+
+      // Применение пиксельных фильтров
+      if (filters.grayscale || filters.contrast || filters.threshold || filters.invert) {
+        const imgData = offCtx.getImageData(padding, padding, targetW, targetH);
+        const d = imgData.data;
+        for (let i = 0; i < d.length; i += 4) {
+          let r = d[i], g = d[i+1], b = d[i+2];
+          let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+          if (filters.contrast) gray = ((gray - 128) * 1.5) + 128;
+          if (filters.threshold) gray = gray > 135 ? 255 : 0;
+          if (filters.invert) gray = 255 - gray;
+          gray = Math.max(0, Math.min(255, gray));
+          d[i] = d[i+1] = d[i+2] = gray;
+        }
+        offCtx.putImageData(imgData, padding, padding);
+      }
+
+      return offCanvas.toDataURL('image/png');
     }
 
-    // =========================================================================
-    // УМНАЯ ПОСТОБРАБОТКА (Исправление путей Windows, слэшей и артефактов)
-    // =========================================================================
-    function cleanAndFixOcrText(raw) {
-      if (!raw) return '';
-      let text = raw;
+    // ДВИЖОК РАСПОЗНАВАНИЯ (TESSERACT.JS)
+    btnRecognize.addEventListener('click', async () => {
+      if (!croppedImageSrc) return;
 
-      // 1. Исправление искаженных букв дисков Windows (CA\, (А\, С/\, С:\ кириллица -> C:\)
-      text = text.replace(/(?:^|\s)(?:[a-zA-Zа-яА-Я0-9]?[ \t]*)?[CСcс][AАaа]?\s*[:;\\|\/]\s*\\/gi, ' C:\\');
-      text = text.replace(/(?:^|\s)(?:[a-zA-Zа-яА-Я0-9]?[ \t]*)?[CСcс][AАaа]?(?=\\Windows|\\Program|\\Users|\\Setup|\\System32)/gi, ' C:');
-
-      // 2. Исправление путей без двоеточия: C\Windows -> C:\Windows
-      text = text.replace(/\b([A-Za-zА-Яа-я])\\(Windows|Program Files|Users|System32|Setup|AppData)\b/gi, '$1:\\$2');
-
-      // 3. Замена кириллической 'С' на латинскую 'C' в начале дисков
-      text = text.replace(/(^|\s)С:\\/g, '$1C:\\');
-
-      // 4. Склеивание переносов строк (слово- \n продолжение -> словопродолжение)
-      text = text.replace(/([а-яА-ЯёЁa-zA-Z]+)-\s*\n\s*([а-яА-ЯёЁa-zA-Z]+)/g, '$1$2');
-
-      // 5. Очистка изолированного мусора (тильды, решетки, градиентный шум на границах иконок)
-      text = text.replace(/[ \t]+[~#^°`]+[ \t]+/g, ' ');
-      text = text.replace(/^[~#^°`+*]{1,3}\s+/gm, '');
-
-      // 6. Удаление двойных обратных слэшей в путях (кроме сетевых UNC-путей в начале строки)
-      text = text.replace(/([^\s\\])\\\\(?=[^\s\\])/g, '$1\\');
-
-      return text.trim();
-    }
-
-    // Tesseract.js: Процесс OCR распознавания
-    startOcrBtn.addEventListener('click', async () => {
-      if (!currentImage) return;
-
-      const lang = langSelect.value;
-      const psm = psmSelect.value;
-      startOcrBtn.disabled = true;
-      startBtnText.textContent = 'Обработка...';
-      scanLine.classList.remove('hidden');
-      progressCard.classList.remove('hidden');
-      progressBar.style.width = '0%';
-      progressPercentage.textContent = '0%';
-
-      // Получаем оптимизированный снимок с апскейлом и белым паддингом
-      const ocrDataUrl = prepareOptimizedImageForOCR();
+      btnRecognize.disabled = true;
+      progressContainer.classList.remove('hidden');
+      progressBar.style.width = '5%';
+      progressPercent.innerText = '5%';
+      progressStatus.innerText = 'Инициализация ядра Tesseract...';
 
       try {
+        const lang = document.getElementById('selectLang').value;
+        const psm = document.getElementById('selectPSM').value;
+        const processedDataUrl = prepareOptimizedImageForOCR();
+
         const worker = await Tesseract.createWorker(lang, 1, {
-          logger: (m) => {
-            if (m.status) {
-              const statusTranslations = {
-                'loading tesseract core': 'Загрузка ядра Tesseract...',
-                'initializing tesseract': 'Инициализация движка...',
-                'initialized tesseract': 'Движок готов',
-                'loading language traineddata': 'Загрузка языковой модели...',
-                'loaded language traineddata': 'Модель загружена',
-                'initializing api': 'Подготовка API...',
-                'initialized api': 'Готово к чтению',
-                'recognizing text': 'Распознавание текста...'
-              };
-
-              const label = statusTranslations[m.status] || m.status;
-              progressStatusText.innerHTML = `
-                <span class="w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span>
-                ${label}
-              `;
-            }
-
-            if (m.progress !== undefined) {
-              const percent = Math.round(m.progress * 100);
-              progressBar.style.width = `${percent}%`;
-              progressPercentage.textContent = `${percent}%`;
+          logger: m => {
+            if (m.status === 'loading tesseract core') progressStatus.innerText = 'Загрузка ядра WebAssembly...';
+            else if (m.status === 'initializing tesseract') progressStatus.innerText = 'Инициализация Tesseract...';
+            else if (m.status === 'loading language traineddata') progressStatus.innerText = `Загрузка языковой базы (${lang})...`;
+            else if (m.status === 'initializing api') progressStatus.innerText = 'Настройка параметров распознавания...';
+            else if (m.status === 'recognizing text') {
+              const p = Math.round(m.progress * 100);
+              progressStatus.innerText = `Распознавание символов: ${p}%`;
+              progressBar.style.width = `${p}%`;
+              progressPercent.innerText = `${p}%`;
             }
           }
         });
 
-        // Настройка режима сегментации страницы (PSM)
         await worker.setParameters({
-          tessedit_pageseg_mode: psm
+          tessedit_pageseg_mode: psm,
         });
 
-        const ret = await worker.recognize(ocrDataUrl);
-        let text = ret.data.text.trim();
-        const confidence = Math.round(ret.data.confidence);
-
-        // Завершение
+        const ret = await worker.recognize(processedDataUrl);
         await worker.terminate();
 
-        resultTextarea.value = text;
-        updateTextStats(text);
+        resultText.value = ret.data.text;
+        updateTextStats();
 
-        // Показ точности
-        confidenceTag.textContent = `Точность: ${confidence}%`;
-        confidenceTag.classList.remove('hidden');
+        // Отображение точности
+        const conf = Math.round(ret.data.confidence);
+        accuracyBadge.innerText = `Точность: ${conf}%`;
+        accuracyBadge.classList.remove('hidden');
 
-        // Активация кнопок
-        toggleActionButtons(text.length > 0);
-
-        // Сохранение в историю (сохраняем превью с canvas)
-        saveToHistory(text, confidence, previewCanvas.toDataURL('image/jpeg', 0.6));
-
-        showToast('Текст успешно распознан!', 'success');
-      } catch (error) {
-        console.error(error);
-        showToast('Ошибка распознавания: ' + (error.message || error), 'error');
+        saveToHistory(ret.data.text);
+        showToast('Текст успешно распознан!');
+      } catch (err) {
+        console.error(err);
+        showToast('Ошибка при распознавании. Попробуйте обрезать фото.', 'alert-circle', true);
       } finally {
-        startOcrBtn.disabled = false;
-        startBtnText.textContent = 'Распознать текст';
-        scanLine.classList.add('hidden');
-        setTimeout(() => {
-          progressCard.classList.add('hidden');
-        }, 1500);
+        btnRecognize.disabled = false;
+        setTimeout(() => progressContainer.classList.add('hidden'), 1000);
       }
     });
 
-    // Обработчик кнопки «Умное исправление»
-    smartFixBtn.addEventListener('click', () => {
-      const current = resultTextarea.value;
-      if (!current) return;
-      const fixed = cleanAndFixOcrText(current);
-      resultTextarea.value = fixed;
-      updateTextStats(fixed);
-      showToast('Пути и артефакты исправлены!', 'success');
+    // Умное исправление путей и артефактов
+    btnFixRegex.addEventListener('click', () => {
+      let t = resultText.value;
+      if (!t.trim()) return;
+
+      // 1. Исправление поврежденных системных дисков Windows (CA\ -> C:\)
+      t = t.replace(/(?:^|\s)([a-zA-Zа-яА-Я])[\\\/|]([a-zA-Z0-9_\-\.]+)/g, '$1:\\$2');
+      // 2. Исправление двойных обратных слэшей
+      t = t.replace(/\\\\+/g, '\\');
+      // 3. Склеивание переносов строк через дефис
+      t = t.replace(/([а-яa-z])-[\r\n]+([а-яa-z])/gi, '$1$2');
+      // 4. Очистка одиночного висячего мусора
+      t = t.replace(/[\^\~°#]/g, '');
+
+      resultText.value = t;
+      updateTextStats();
+      showToast('Текст очищен и нормализован', 'wand-2');
     });
 
     // Подсчет статистики текста
-    function updateTextStats(text) {
-      const chars = text.length;
-      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-      const lines = text.trim() ? text.split('\n').length : 0;
-
-      statChars.textContent = chars.toLocaleString();
-      statWords.textContent = words.toLocaleString();
-      statLines.textContent = lines.toLocaleString();
+    function updateTextStats() {
+      const val = resultText.value;
+      statChars.innerText = val.length;
+      statWords.innerText = val.trim() ? val.trim().split(/\s+/).length : 0;
+      statLines.innerText = val.trim() ? val.split(/\r\n|\r|\n/).length : 0;
     }
+    resultText.addEventListener('input', updateTextStats);
 
-    resultTextarea.addEventListener('input', (e) => {
-      const val = e.target.value;
-      updateTextStats(val);
-      toggleActionButtons(val.length > 0);
-    });
-
-    function toggleActionButtons(hasText) {
-      smartFixBtn.disabled = !hasText;
-      copyBtn.disabled = !hasText;
-      downloadTxtBtn.disabled = !hasText;
-      cleanSpacesBtn.disabled = !hasText;
-      clearTextBtn.disabled = !hasText;
-    }
-
-    // ДЕЙСТВИЯ С ТЕКСТОМ
-    function copyToClipboard(text) {
-      const tempTextArea = document.createElement('textarea');
-      tempTextArea.value = text;
-      tempTextArea.style.position = 'fixed';
-      tempTextArea.style.left = '-9999px';
-      tempTextArea.style.top = '-9999px';
-      document.body.appendChild(tempTextArea);
-      tempTextArea.focus();
-      tempTextArea.select();
-
-      try {
-        const successful = document.execCommand('copy');
-        if (successful) {
-          showToast('Текст скопирован в буфер обмена', 'success');
-        } else {
-          showToast('Не удалось скопировать текст', 'error');
-        }
-      } catch (err) {
-        showToast('Ошибка при копировании: ' + err, 'error');
-      }
-      document.body.removeChild(tempTextArea);
-    }
-
-    copyBtn.addEventListener('click', () => {
-      const text = resultTextarea.value;
-      if (!text) return;
-      copyToClipboard(text);
-    });
-
-    // Скачать .txt
-    downloadTxtBtn.addEventListener('click', () => {
-      const text = resultTextarea.value;
-      if (!text) return;
-      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `lenstext_ocr_${Date.now()}.txt`;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast('Файл .txt сохранен', 'success');
-    });
-
-    // Убрать лишние пробелы и пустые строки
-    cleanSpacesBtn.addEventListener('click', () => {
-      let text = resultTextarea.value;
-      if (!text) return;
-      text = text
-        .split('\n')
-        .map(line => line.trim().replace(/\s+/g, ' '))
-        .filter(line => line.length > 0)
-        .join('\n');
-      resultTextarea.value = text;
-      updateTextStats(text);
-      showToast('Форматирование очищено', 'info');
-    });
-
-    // Очистить текст
-    clearTextBtn.addEventListener('click', () => {
-      resultTextarea.value = '';
-      confidenceTag.classList.add('hidden');
-      updateTextStats('');
-      toggleActionButtons(false);
-      showToast('Поле очищено', 'info');
-    });
-
-    // ИСТОРИЯ СКАНИРОВАНИЙ (localStorage)
-    const HISTORY_KEY = 'lenstext_ocr_history';
-
-    function getHistory() {
-      try {
-        return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-      } catch (e) {
-        return [];
-      }
-    }
-
-    function saveToHistory(text, confidence, previewUrl) {
-      if (!text.trim()) return;
-
-      const history = getHistory();
-      const newItem = {
-        id: Date.now(),
-        date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        text: text,
-        confidence: confidence,
-        preview: previewUrl,
-        chars: text.length
-      };
-
-      history.unshift(newItem);
-      if (history.length > 15) history.pop();
-
-      try {
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-      } catch (e) {
-        const lightweight = history.map(item => ({ ...item, preview: null }));
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(lightweight));
-      }
-
-      renderHistory();
-    }
-
-    function renderHistory() {
-      const history = getHistory();
-      historyList.innerHTML = '';
-
-      if (history.length > 0) {
-        historyBadge.textContent = history.length;
-        historyBadge.classList.remove('hidden');
-        historyBadge.classList.add('flex');
-      } else {
-        historyBadge.classList.add('hidden');
-        historyList.innerHTML = `
-          <div class="h-64 flex flex-col items-center justify-center text-center text-slate-500">
-            <i data-lucide="clock" class="w-8 h-8 mb-2 stroke-1"></i>
-            <p class="text-xs">История распознаваний пуста</p>
-          </div>
-        `;
-        lucide.createIcons({ root: historyList });
-        return;
-      }
-
-      history.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'group p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 hover:border-indigo-500/50 transition-all flex flex-col gap-2 cursor-pointer';
-        
-        const previewImg = item.preview 
-          ? `<img src="${item.preview}" class="w-10 h-10 object-cover rounded-lg border border-slate-800 shrink-0">` 
-          : `<div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 shrink-0"><i data-lucide="file-text" class="w-4 h-4"></i></div>`;
-
-        card.innerHTML = `
-          <div class="flex items-center gap-2.5">
-            ${previewImg}
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between text-[11px] text-slate-400">
-                <span class="font-mono">${item.date}</span>
-                <span class="text-indigo-400 font-medium">Точность: ${item.confidence}%</span>
-              </div>
-              <p class="text-xs text-slate-300 font-mono truncate mt-0.5">${item.chars} симв.</p>
-            </div>
-          </div>
-          <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed bg-slate-900/50 p-2 rounded-lg border border-slate-800/50 font-sans">
-            ${escapeHtml(item.text)}
-          </p>
-          <div class="flex items-center justify-end gap-1 pt-1 border-t border-slate-800/40 opacity-80 group-hover:opacity-100">
-            <span class="text-[10px] text-indigo-400 font-medium flex items-center gap-1">
-              Нажмите, чтобы вставить <i data-lucide="arrow-right" class="w-3 h-3"></i>
-            </span>
-          </div>
-        `;
-
-        card.addEventListener('click', () => {
-          resultTextarea.value = item.text;
-          confidenceTag.textContent = `Точность: ${item.confidence}%`;
-          confidenceTag.classList.remove('hidden');
-          updateTextStats(item.text);
-          toggleActionButtons(true);
-          toggleHistoryDrawer(false);
-          showToast('Текст восстановлен из истории', 'info');
-        });
-
-        historyList.appendChild(card);
+    // Копирование, выгрузка и очистка текста
+    btnCopyText.addEventListener('click', () => {
+      if (!resultText.value) return;
+      navigator.clipboard.writeText(resultText.value).then(() => {
+        showToast('Скопировано в буфер обмена');
       });
-
-      lucide.createIcons({ root: historyList });
-    }
-
-    function escapeHtml(string) {
-      const div = document.createElement('div');
-      div.innerText = string;
-      return div.innerHTML;
-    }
-
-    function toggleHistoryDrawer(open) {
-      if (open) {
-        historyDrawer.classList.remove('translate-x-full');
-        historyOverlay.classList.remove('hidden');
-        renderHistory();
-      } else {
-        historyDrawer.classList.add('translate-x-full');
-        historyOverlay.classList.add('hidden');
-      }
-    }
-
-    historyToggleBtn.addEventListener('click', () => toggleHistoryDrawer(true));
-    historyDrawerCloseBtn.addEventListener('click', () => toggleHistoryDrawer(false));
-    historyOverlay.addEventListener('click', () => toggleHistoryDrawer(false));
-
-    clearAllHistoryBtn.addEventListener('click', () => {
-      localStorage.removeItem(HISTORY_KEY);
-      renderHistory();
-      showToast('История очищена', 'info');
     });
 
-    // Инициализация при старте
-    renderHistory();
+    btnDownloadTxt.addEventListener('click', () => {
+      if (!resultText.value) return;
+      const blob = new Blob([resultText.value], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `OCR_${new Date().toISOString().slice(0,10)}.txt`;
+      a.click();
+      showToast('Файл .txt скачан');
+    });
+
+    btnClearResult.addEventListener('click', () => {
+      resultText.value = '';
+      accuracyBadge.classList.add('hidden');
+      updateTextStats();
+    });
+
+    // Локальная история распознаваний (LocalStorage)
+    function saveToHistory(text) {
+      if (!text || !text.trim()) return;
+      let history = JSON.parse(localStorage.getItem('lenstext_history') || '[]');
+      history.unshift({
+        text: text.slice(0, 300),
+        fullText: text,
+        date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+      if (history.length > 15) history.pop();
+      localStorage.setItem('lenstext_history', JSON.stringify(history));
+    }
+
+    const modalHistory = document.getElementById('modalHistory');
+    const historyList = document.getElementById('historyList');
+
+    document.getElementById('btnOpenHistory').addEventListener('click', () => {
+      const history = JSON.parse(localStorage.getItem('lenstext_history') || '[]');
+      historyList.innerHTML = '';
+      if (history.length === 0) {
+        historyList.innerHTML = '<p class="text-xs text-slate-500 text-center py-6">История пока пуста</p>';
+      } else {
+        history.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer text-xs text-slate-300 transition-colors flex flex-col gap-1';
+          div.innerHTML = `<div class="flex justify-between text-[11px] text-slate-500 font-mono"><span>${item.date}</span><span class="text-indigo-400">Вставить</span></div><p class="truncate">${item.text}</p>`;
+          div.onclick = () => {
+            resultText.value = item.fullText;
+            updateTextStats();
+            modalHistory.classList.add('hidden');
+            showToast('Текст загружен из истории');
+          };
+          historyList.appendChild(div);
+        });
+      }
+      modalHistory.classList.remove('hidden');
+    });
+
+    document.getElementById('btnCloseHistory').addEventListener('click', () => modalHistory.classList.add('hidden'));
+    document.getElementById('btnClearAllHistory').addEventListener('click', () => {
+      localStorage.removeItem('lenstext_history');
+      modalHistory.classList.add('hidden');
+      showToast('История очищена');
+    });
   </script>
 </body>
 </html>
