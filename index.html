@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LensText OCR — Бесплатное распознавание текста со скриншотов онлайн</title>
-  <meta name="description" content="Бесплатное и безопасное распознавание текста со скриншотов и фото онлайн прямо в браузере (Ctrl+V). Русский и английский языки, без регистрации и передачи на сервер.">
-  <meta name="keywords" content="ocr онлайн, распознать текст со скриншота, распознавание текста бесплатно, tesseract онлайн, скопировать текст с картинки">
+  <title>DocuMD — Подготовка документов в Markdown для ИИ</title>
+  <meta name="description" content="Конвертируйте DOCX, XLSX, PPTX, PDF и другие документы в чистый Markdown для ChatGPT, Claude и других ИИ. Пакетная обработка и подсчёт токенов прямо в браузере.">
+  <meta name="keywords" content="конвертер документов в markdown, docx в markdown, pdf в markdown, подготовка документов для ИИ, токены, ChatGPT документы, OCR онлайн">
 
   <!-- Метатеги подтверждения поисковых систем -->
   <meta name="yandex-verification" content="4ee02d515e683e7d" />
@@ -13,14 +13,28 @@
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <!-- Google Fonts: уютная редакторская пара DM Sans + Lora -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Lora:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Tesseract.js v5 -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <!-- Document conversion libraries: all processing stays in the browser -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script type="module">
+    import * as pdfjsLib from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs';
+    import { encode, decode } from 'https://cdn.jsdelivr.net/npm/gpt-tokenizer@3.4.0/+esm';
+    window.pdfjsLib = pdfjsLib;
+    window.countTextTokens = text => encode(String(text || '')).length;
+    window.encodeTextTokens = text => encode(String(text || ''));
+    window.decodeTextTokens = tokens => decode(tokens);
+    window.tokenizerReady = true;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
+  </script>
 
   <script>
     tailwind.config = {
@@ -28,8 +42,9 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
+              sans: ['DM Sans', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+              serif: ['Lora', 'serif'],
           },
           colors: {
             brand: {
@@ -46,13 +61,15 @@
 
   <style>
     body {
-      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #09090b 70%);
+      background: #181716;
+      color: #f2ece3;
       min-height: 100vh;
     }
     .glass-card {
-      background: rgba(18, 18, 23, 0.75);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #242220;
+      backdrop-filter: none;
+      border: 1px solid #3a3530;
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.18);
     }
     .custom-scrollbar::-webkit-scrollbar {
       width: 6px;
@@ -62,6 +79,59 @@
       background: rgba(255, 255, 255, 0.15);
       border-radius: 4px;
     }
+    .drop-active {
+      border-color: rgba(129, 140, 248, 0.9) !important;
+      background: rgba(99, 102, 241, 0.10) !important;
+      transform: translateY(-1px);
+    }
+    .file-row[data-state="done"] .file-state { color: #34d399; }
+    .file-row[data-state="error"] .file-state { color: #fb7185; }
+    .file-row[data-state="working"] .file-state { color: #fbbf24; }
+
+    /* Тёплая редакторская тема: минимум свечения, максимум читаемости. */
+    body, button, input, textarea, select { font-family: 'DM Sans', sans-serif; }
+    h1, h2, h3 { font-family: 'Lora', serif; letter-spacing: -0.02em; }
+    textarea, code, pre, .font-mono { font-family: 'JetBrains Mono', monospace; }
+    body.text-slate-200 { color: #f2ece3 !important; }
+    [class*="text-white"] { color: #f7f1e8 !important; }
+    [class*="text-slate-200"] { color: #e8e0d5 !important; }
+    [class*="text-slate-300"] { color: #c4b9ac !important; }
+    [class*="text-slate-400"] { color: #a69b8f !important; }
+    [class*="text-slate-500"] { color: #82786d !important; }
+    [class*="text-slate-600"] { color: #685f57 !important; }
+    [class*="bg-white/"] { background-color: rgba(255, 248, 238, 0.06) !important; }
+    [class*="bg-black/"] { background-color: #1d1b1a !important; }
+    [class*="border-white/"] { border-color: #3a3530 !important; }
+    [class*="border-indigo-"] { border-color: rgba(212, 122, 92, 0.32) !important; }
+    [class*="shadow-indigo-"] { box-shadow: 0 16px 34px rgba(0, 0, 0, 0.18) !important; }
+    [class*="shadow-emerald-"] { box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18) !important; }
+    [class*="bg-gradient-"] { background-image: none !important; }
+    [class*="bg-[#09090b]"] { background-color: rgba(24, 23, 22, 0.94) !important; }
+    .bg-gradient-to-tr { background-color: #b8634c !important; }
+    .bg-gradient-to-br { background-color: #242220 !important; }
+    .bg-gradient-to-r { background-color: #6f9278 !important; }
+    .drop-active { border-color: rgba(212, 122, 92, 0.72) !important; background: rgba(212, 122, 92, 0.10) !important; }
+    .bg-indigo-600, .bg-emerald-600 { background-color: #d47a5c !important; }
+    .bg-indigo-600:hover, .bg-emerald-600:hover { background-color: #b8634c !important; }
+    button.bg-indigo-600, button.bg-emerald-600 { color: #fff8f0 !important; }
+    button.bg-indigo-600 *, button.bg-emerald-600 * { color: #fff8f0 !important; }
+    button.bg-indigo-600:disabled, button.bg-emerald-600:disabled { background-color: #3a3530 !important; color: #82786d !important; }
+    button.bg-indigo-600:disabled *, button.bg-emerald-600:disabled * { color: #82786d !important; }
+    .text-indigo-300, .text-indigo-400, .text-indigo-500 { color: #d47a5c !important; }
+    .text-emerald-300, .text-emerald-400 { color: #8eaf95 !important; }
+    .text-cyan-200, .text-cyan-300, .text-cyan-400 { color: #8eaf95 !important; }
+    .text-violet-300, .text-violet-400 { color: #c58b73 !important; }
+    .text-rose-300, .text-orange-300 { color: #d47a5c !important; }
+    .border-emerald-400\/20, .border-emerald-500\/20 { border-color: rgba(142, 175, 149, 0.32) !important; }
+    .border-cyan-400\/15 { border-color: rgba(142, 175, 149, 0.26) !important; }
+    .rounded-3xl { border-radius: 16px !important; }
+    .rounded-2xl { border-radius: 12px !important; }
+    .rounded-xl { border-radius: 10px !important; }
+    .bg-emerald-500\/10, .bg-cyan-400\/\[0\.05\] { background-color: rgba(142, 175, 149, 0.10) !important; }
+    .bg-indigo-500\/10, .bg-indigo-500\/20 { background-color: rgba(212, 122, 92, 0.12) !important; }
+    .hover\\:bg-white\\/10:hover { background-color: #302c29 !important; }
+    input:focus, textarea:focus, select:focus { border-color: rgba(212, 122, 92, 0.72) !important; box-shadow: 0 0 0 3px rgba(212, 122, 92, 0.12); }
+    ::selection { background: rgba(212, 122, 92, 0.28); color: #f7f1e8; }
   </style>
 </head>
 <body class="text-slate-200 antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
@@ -74,8 +144,8 @@
           <i data-lucide="scan-text" class="w-6 h-6 text-white"></i>
         </div>
         <div>
-          <span class="font-bold text-lg text-white tracking-tight">LensText <span class="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">OCR AI</span></span>
-          <p class="text-xs text-slate-400 hidden sm:block">100% локальное распознавание текста без отправки на сервер</p>
+          <span class="font-bold text-lg text-white tracking-tight">DocuMD <span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">FOR AI</span></span>
+          <p class="text-xs text-slate-400 hidden sm:block">Документы в Markdown для ChatGPT, Claude и других ИИ</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -90,6 +160,166 @@
   </header>
 
   <main class="max-w-6xl mx-auto px-4 py-8">
+    <section class="mb-8 relative overflow-hidden rounded-3xl border border-emerald-400/20 bg-gradient-to-br from-emerald-500/[0.12] via-indigo-500/[0.08] to-transparent p-6 lg:p-8 shadow-2xl shadow-emerald-950/20">
+      <div class="absolute -right-20 -top-24 w-72 h-72 rounded-full bg-emerald-400/10 blur-3xl pointer-events-none"></div>
+      <div class="relative max-w-3xl">
+        <div class="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-[11px] font-medium text-emerald-200 mb-4"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Подготовка документов для ИИ</div>
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-[1.08]">Ваш документ готов к работе с ИИ</h1>
+        <p class="mt-4 max-w-2xl text-sm sm:text-base text-slate-300 leading-relaxed">Загрузите DOCX, XLSX, PPTX или PDF и получите чистый Markdown, который проще анализировать, редактировать и отправлять в ChatGPT, Claude, Gemini или Cursor.</p>
+        <div class="flex flex-wrap items-center gap-3 mt-6">
+          <a href="#documentConverter" class="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/20 hover:bg-emerald-400 transition-colors">Конвертировать документ <i data-lucide="arrow-down" class="w-4 h-4"></i></a>
+          <span class="inline-flex items-center gap-2 text-xs text-slate-400"><i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> Файлы не покидают браузер</span>
+        </div>
+      </div>
+      <div class="relative mt-7 grid grid-cols-1 sm:grid-cols-3 gap-2 max-w-2xl">
+        <div class="rounded-xl border border-white/10 bg-black/20 p-3"><div class="text-lg font-bold text-white">1</div><div class="text-[11px] text-slate-400 mt-1">Загрузите файл или папку</div></div>
+        <div class="rounded-xl border border-white/10 bg-black/20 p-3"><div class="text-lg font-bold text-white">2</div><div class="text-[11px] text-slate-400 mt-1">Получите структурированный MD</div></div>
+        <div class="rounded-xl border border-white/10 bg-black/20 p-3"><div class="text-lg font-bold text-white">3</div><div class="text-[11px] text-slate-400 mt-1">Проверьте токены и скопируйте</div></div>
+      </div>
+    </section>
+
+    <!-- Конвертер офисных документов в Markdown для ИИ -->
+    <section id="documentConverter" class="mt-10 glass-card rounded-2xl p-5 lg:p-6 border border-indigo-500/20 shadow-2xl shadow-indigo-950/20">
+      <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-5">
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <i data-lucide="file-code-2" class="w-5 h-5"></i>
+            </div>
+            <h2 class="text-lg font-bold text-white">Документы → Markdown для ИИ</h2>
+            <span class="text-[10px] uppercase tracking-wider px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">Локально</span>
+          </div>
+          <p class="text-xs text-slate-400 max-w-2xl leading-relaxed">Загрузите один файл или сразу папку документов. Конвертация выполняется прямо в браузере — содержимое не отправляется на сервер.</p>
+        </div>
+        <div class="flex flex-wrap gap-2 text-[11px] text-slate-400">
+          <span class="px-2 py-1 rounded-lg bg-white/5 border border-white/10">DOCX</span>
+          <span class="px-2 py-1 rounded-lg bg-white/5 border border-white/10">XLSX</span>
+          <span class="px-2 py-1 rounded-lg bg-white/5 border border-white/10">PPTX</span>
+          <span class="px-2 py-1 rounded-lg bg-white/5 border border-white/10">PDF</span>
+          <span class="px-2 py-1 rounded-lg bg-white/5 border border-white/10">TXT · CSV · HTML · JSON</span>
+        </div>
+      </div>
+
+      <div class="mb-5 flex items-start gap-3 rounded-xl border border-cyan-400/15 bg-cyan-400/[0.05] px-4 py-3">
+        <i data-lucide="gauge" class="w-4 h-4 text-cyan-300 mt-0.5 shrink-0"></i>
+        <p class="text-xs text-slate-300 leading-relaxed"><strong class="text-cyan-200">Меньше лишних токенов для ИИ.</strong> Markdown сохраняет заголовки, списки, таблицы и порядок текста без тяжёлой служебной разметки офисных файлов. Поэтому документ обычно занимает меньше контекста и может снизить расход токенов при анализе — точная экономия зависит от исходного файла и выбранной модели.</p>
+      </div>
+
+      <div class="mb-5 rounded-xl border border-white/10 bg-black/20 p-4" aria-label="Иллюстративное сравнение количества токенов">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex items-center gap-2"><i data-lucide="bar-chart-3" class="w-4 h-4 text-violet-300"></i><span class="text-xs font-semibold text-slate-200">Пример размера в токенах</span></div>
+          <span class="text-[10px] px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">примерная экономия 32%</span>
+        </div>
+        <div class="grid grid-cols-[92px_1fr_64px] items-center gap-3 mb-2">
+          <span class="text-[11px] text-slate-400">DOCX</span>
+          <div class="h-2 rounded-full bg-white/10 overflow-hidden"><div class="h-full w-full rounded-full bg-gradient-to-r from-rose-400 to-orange-300"></div></div>
+          <span class="text-right text-[11px] font-mono text-slate-300">1 450</span>
+        </div>
+        <div class="grid grid-cols-[92px_1fr_64px] items-center gap-3">
+          <span class="text-[11px] text-slate-400">Markdown</span>
+          <div class="h-2 rounded-full bg-white/10 overflow-hidden"><div class="h-full w-[68%] rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400"></div></div>
+          <span class="text-right text-[11px] font-mono text-emerald-300">980</span>
+        </div>
+        <p class="text-[10px] text-slate-500 mt-3">Иллюстрация для условного текстового документа одинакового содержания. Фактическое соотношение пересчитывается только после конвертации и зависит от документа и токенизатора модели.</p>
+      </div>
+
+      <div id="tokenCalculator" class="hidden mb-5 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.05] p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex items-center gap-2"><i data-lucide="calculator" class="w-4 h-4 text-emerald-300"></i><span class="text-xs font-semibold text-slate-200">Расчёт по вашим файлам</span></div>
+          <span id="tokenCalculatorStatus" class="text-[10px] text-emerald-300">После конвертации</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div class="rounded-lg bg-black/20 border border-white/10 p-3"><p class="text-[10px] text-slate-500">Исходное представление</p><p id="sourceTokenCount" class="text-lg font-bold text-rose-300 mt-1">—</p><p class="text-[10px] text-slate-500">токенов</p></div>
+          <div class="rounded-lg bg-black/20 border border-white/10 p-3"><p class="text-[10px] text-slate-500">Markdown</p><p id="markdownTokenCount" class="text-lg font-bold text-cyan-300 mt-1">—</p><p class="text-[10px] text-slate-500">токенов</p></div>
+          <div class="rounded-lg bg-black/20 border border-white/10 p-3"><p class="text-[10px] text-slate-500">Экономия</p><p id="savedTokenCount" class="text-lg font-bold text-emerald-300 mt-1">—</p><p id="savedTokenPercent" class="text-[10px] text-slate-500">—</p></div>
+        </div>
+        <p id="tokenCalculatorNote" class="text-[10px] text-slate-500 mt-3">Подсчёт выполняется локально GPT-совместимым токенизатором. Для разных ИИ-моделей итоговое число может отличаться.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-5 gap-5">
+        <div class="lg:col-span-2 flex flex-col gap-3">
+          <div id="docDropZone" class="min-h-[190px] rounded-2xl border-2 border-dashed border-white/15 hover:border-indigo-500/50 flex flex-col items-center justify-center p-5 text-center cursor-pointer transition-all bg-white/[0.01] hover:bg-white/[0.03]">
+            <input type="file" id="docFileInput" multiple accept=".docx,.xlsx,.xls,.pptx,.pdf,.txt,.csv,.md,.html,.htm,.json,.xml,.rtf,.odt" class="hidden">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-3">
+              <i data-lucide="files" class="w-6 h-6"></i>
+            </div>
+            <p class="text-sm font-medium text-slate-200">Перетащите документы сюда</p>
+            <p class="text-xs text-slate-500 mt-1">или нажмите, чтобы выбрать один или несколько файлов</p>
+            <div class="flex gap-2 mt-4">
+              <button id="btnChooseDoc" type="button" class="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors">Выбрать файлы</button>
+              <button id="btnChooseFolder" type="button" class="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-xs font-medium transition-colors">Выбрать папку</button>
+            </div>
+          </div>
+          <input type="file" id="docFolderInput" webkitdirectory directory multiple class="hidden">
+
+          <div class="rounded-xl border border-white/10 bg-black/20 p-3">
+            <div class="flex items-center gap-2 mb-3"><i data-lucide="sliders-horizontal" class="w-4 h-4 text-emerald-400"></i><span class="text-xs font-semibold text-slate-300">Подготовка для ИИ и RAG</span></div>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="text-[10px] text-slate-500">Профиль вывода
+                <select id="docProfile" class="mt-1 w-full px-2 py-2 rounded-lg bg-white/5 border border-white/10 text-xs text-slate-300 focus:outline-none">
+                  <option value="clean">Чистый Markdown</option>
+                  <option value="rag">Для RAG</option>
+                  <option value="cursor">Для Cursor</option>
+                  <option value="chat">Для ChatGPT / Claude</option>
+                </select>
+              </label>
+              <label class="text-[10px] text-slate-500">Размер чанка
+                <select id="chunkSize" class="mt-1 w-full px-2 py-2 rounded-lg bg-white/5 border border-white/10 text-xs text-slate-300 focus:outline-none">
+                  <option value="512">512 токенов</option>
+                  <option value="1024" selected>1 024 токена</option>
+                  <option value="2048">2 048 токенов</option>
+                  <option value="4096">4 096 токенов</option>
+                </select>
+              </label>
+              <label class="text-[10px] text-slate-500">Перекрытие
+                <select id="chunkOverlap" class="mt-1 w-full px-2 py-2 rounded-lg bg-white/5 border border-white/10 text-xs text-slate-300 focus:outline-none">
+                  <option value="0">Без перекрытия</option>
+                  <option value="50" selected>50 токенов</option>
+                  <option value="100">100 токенов</option>
+                  <option value="200">200 токенов</option>
+                </select>
+              </label>
+              <label class="flex items-end gap-2 pb-1 text-[10px] text-slate-500"><input id="cleanDocument" type="checkbox" checked class="accent-[#c96b4b]"> Очистить переносы и пробелы</label>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-2">Для чанков и JSONL используется GPT-совместимый токенизатор. Размер overlap помогает не терять контекст на границах фрагментов.</p>
+          </div>
+
+          <div class="rounded-xl border border-white/10 bg-black/20 p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold text-slate-300">Очередь файлов</span>
+              <button id="btnClearDocs" class="text-[11px] text-slate-500 hover:text-rose-300 transition-colors">Очистить</button>
+            </div>
+            <div id="docFileList" class="flex flex-col gap-1.5 max-h-[190px] overflow-y-auto custom-scrollbar">
+              <p class="text-[11px] text-slate-600 text-center py-5">Файлы появятся здесь</p>
+            </div>
+          </div>
+
+          <button id="btnConvertDocs" disabled class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-white/10 disabled:text-slate-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2">
+            <i data-lucide="wand-sparkles" class="w-4 h-4"></i>
+            <span>Конвертировать в Markdown</span>
+          </button>
+          <div id="docProgress" class="hidden">
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1"><span id="docProgressText">Подготовка...</span><span id="docProgressPct">0%</span></div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden"><div id="docProgressBar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all" style="width:0%"></div></div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-3 flex flex-col min-h-[430px]">
+          <div class="flex items-center justify-between gap-3 mb-2">
+            <div class="flex items-center gap-2"><i data-lucide="brackets" class="w-4 h-4 text-emerald-400"></i><span class="text-sm font-semibold text-white">Результат Markdown</span><span id="docResultStats" class="text-[11px] text-slate-500"></span></div>
+            <div class="flex items-center gap-1">
+              <button id="btnCopyMarkdown" class="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] text-slate-300 flex items-center gap-1.5"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Копировать</button>
+              <button id="btnDownloadMarkdown" class="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] text-slate-300 flex items-center gap-1.5"><i data-lucide="download" class="w-3.5 h-3.5"></i>Скачать .md</button>
+              <button id="btnDownloadJsonl" class="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] text-slate-300 flex items-center gap-1.5"><i data-lucide="braces" class="w-3.5 h-3.5"></i>JSONL</button>
+            </div>
+          </div>
+          <textarea id="docResult" placeholder="# Здесь появится Markdown-документ...&#10;&#10;Подходит для загрузки в ChatGPT, Claude, Gemini, Cursor и другие ИИ-инструменты." class="flex-1 min-h-[390px] w-full p-4 rounded-xl bg-black/40 border border-white/10 text-slate-200 placeholder-slate-600 text-xs font-mono leading-relaxed focus:outline-none focus:border-emerald-500/70 resize-none custom-scrollbar"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <div class="flex items-center gap-3 mt-2 mb-4"><div class="h-px flex-1 bg-white/10"></div><span class="text-[11px] uppercase tracking-[0.18em] text-slate-500">Дополнительный инструмент · OCR изображений</span><div class="h-px flex-1 bg-white/10"></div></div>
+
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
       <!-- Левая колонка: Загрузка и Предобработка -->
@@ -268,7 +498,7 @@
           <h3 class="text-sm font-semibold text-indigo-300 mb-2 flex items-center gap-2">
             <i data-lucide="shield-check" class="w-4 h-4"></i> Безопасно ли загружать документы?
           </h3>
-          <p class="text-xs text-slate-400 leading-relaxed">Да, на 100%. Сервис LensText OCR работает прямо в вашем браузере с помощью технологии WebAssembly. Изображения никогда не отправляются на удаленные серверы.</p>
+          <p class="text-xs text-slate-400 leading-relaxed">Да. Дополнительный OCR-инструмент DocuMD работает прямо в браузере с помощью WebAssembly. Изображения не отправляются на удалённые серверы.</p>
         </div>
         <div class="glass-card p-5 rounded-2xl">
           <h3 class="text-sm font-semibold text-indigo-300 mb-2 flex items-center gap-2">
@@ -746,6 +976,325 @@
       modalHistory.classList.add('hidden');
       showToast('История очищена');
     });
+
+
+    // ===== Конвертер документов в Markdown =====
+    const docDropZone = document.getElementById('docDropZone');
+    const docFileInput = document.getElementById('docFileInput');
+    const docFolderInput = document.getElementById('docFolderInput');
+    const docFileList = document.getElementById('docFileList');
+    const btnConvertDocs = document.getElementById('btnConvertDocs');
+    const btnClearDocs = document.getElementById('btnClearDocs');
+    const docResult = document.getElementById('docResult');
+    const docResultStats = document.getElementById('docResultStats');
+    const docProgress = document.getElementById('docProgress');
+    const docProgressText = document.getElementById('docProgressText');
+    const docProgressPct = document.getElementById('docProgressPct');
+    const docProgressBar = document.getElementById('docProgressBar');
+    const docProfile = document.getElementById('docProfile');
+    const chunkSize = document.getElementById('chunkSize');
+    const chunkOverlap = document.getElementById('chunkOverlap');
+    const cleanDocument = document.getElementById('cleanDocument');
+    let documentQueue = [];
+    let convertedDocuments = [];
+    let latestJsonl = '';
+
+    function formatBytes(bytes) {
+      if (!bytes) return '0 Б';
+      const units = ['Б', 'КБ', 'МБ', 'ГБ'];
+      const power = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+      return `${(bytes / Math.pow(1024, power)).toFixed(power ? 1 : 0)} ${units[power]}`;
+    }
+    function extensionOf(name) { return name.toLowerCase().split('.').pop(); }
+    function iconForExtension(ext) {
+      return { docx: 'file-type-2', xlsx: 'table-2', xls: 'table-2', pptx: 'presentation', pdf: 'file-text', csv: 'table', md: 'brackets', json: 'braces', html: 'globe-2', htm: 'globe-2', txt: 'file-text', rtf: 'file-text', odt: 'file-text', xml: 'file-code-2' }[ext] || 'file';
+    }
+    function addDocuments(files) {
+      const accepted = [...files].filter(file => {
+        const ext = extensionOf(file.name);
+        return ['docx','xlsx','xls','pptx','pdf','txt','csv','md','html','htm','json','xml','rtf','odt'].includes(ext);
+      });
+      const existing = new Set(documentQueue.map(item => `${item.file.name}-${item.file.size}-${item.file.lastModified}`));
+      accepted.forEach(file => {
+        const key = `${file.name}-${file.size}-${file.lastModified}`;
+        if (!existing.has(key)) documentQueue.push({ file, state: 'ready', message: 'Готов к обработке' });
+      });
+      renderDocumentQueue();
+      if (accepted.length < files.length) showToast('Некоторые форматы не поддерживаются', 'alert-circle', true);
+    }
+    function renderDocumentQueue() {
+      docFileList.innerHTML = '';
+      if (!documentQueue.length) {
+        docFileList.innerHTML = '<p class="text-[11px] text-slate-600 text-center py-5">Файлы появятся здесь</p>';
+        btnConvertDocs.disabled = true;
+        return;
+      }
+      documentQueue.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'file-row flex items-center gap-2 p-2 rounded-lg bg-white/[0.03] border border-white/5';
+        row.dataset.state = item.state;
+        const icon = document.createElement('i');
+        icon.setAttribute('data-lucide', iconForExtension(extensionOf(item.file.name)));
+        icon.className = 'w-4 h-4 text-slate-400 shrink-0';
+        const info = document.createElement('div');
+        info.className = 'min-w-0 flex-1';
+        const name = document.createElement('p');
+        name.className = 'text-[11px] text-slate-200 truncate'; name.textContent = item.file.name;
+        const meta = document.createElement('p');
+        meta.className = 'text-[10px] text-slate-500'; meta.textContent = `${extensionOf(item.file.name).toUpperCase()} · ${formatBytes(item.file.size)}`;
+        info.append(name, meta);
+        const state = document.createElement('span');
+        state.className = 'file-state text-[10px] whitespace-nowrap'; state.textContent = item.message;
+        const remove = document.createElement('button');
+        remove.className = 'text-slate-600 hover:text-rose-300 p-1'; remove.title = 'Удалить файл';
+        remove.innerHTML = '<i data-lucide="x" class="w-3.5 h-3.5"></i>';
+        remove.addEventListener('click', () => { documentQueue.splice(index, 1); renderDocumentQueue(); });
+        row.append(icon, info, state, remove); docFileList.appendChild(row);
+      });
+      btnConvertDocs.disabled = !documentQueue.length || documentQueue.some(item => item.state === 'working');
+      lucide.createIcons();
+    }
+    function escapeMarkdownText(value) {
+      return String(value ?? '').replace(/\r/g, '').replace(/\u0000/g, '').trim();
+    }
+    function htmlToMarkdown(html) {
+      const root = document.createElement('div'); root.innerHTML = html;
+      const convert = node => {
+        if (node.nodeType === Node.TEXT_NODE) return node.nodeValue.replace(/\s+/g, ' ');
+        if (node.nodeType !== Node.ELEMENT_NODE) return '';
+        const content = [...node.childNodes].map(convert).join('');
+        const tag = node.tagName.toLowerCase();
+        if (/^h[1-6]$/.test(tag)) return `\n${'#'.repeat(Number(tag[1]))} ${content.trim()}\n\n`;
+        if (tag === 'p' || tag === 'div') return `\n${content.trim()}\n\n`;
+        if (tag === 'br') return '\n';
+        if (tag === 'strong' || tag === 'b') return `**${content.trim()}**`;
+        if (tag === 'em' || tag === 'i') return `*${content.trim()}*`;
+        if (tag === 'code') return `\`${content.trim()}\``;
+        if (tag === 'pre') return `\n\n\`\`\`\n${node.textContent.trim()}\n\`\`\`\n\n`;
+        if (tag === 'li') return `\n- ${content.trim()}`;
+        if (tag === 'ul' || tag === 'ol') return `\n${content}\n\n`;
+        if (tag === 'a') return `[${content.trim()}](${node.getAttribute('href') || ''})`;
+        return content;
+      };
+      return convert(root).replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+    }
+    function sheetToMarkdown(rows) {
+      const clean = rows.map(row => row.map(cell => String(cell ?? '').replace(/\r?\n/g, '<br>').replace(/\|/g, '\\|').trim()));
+      if (!clean.length) return '';
+      const width = Math.max(...clean.map(row => row.length), 1);
+      const padded = clean.map(row => [...row, ...Array(width - row.length).fill('')]);
+      const header = padded[0].map(cell => cell || ' ');
+      const divider = header.map(() => '---');
+      return [
+        `| ${header.join(' | ')} |`,
+        `| ${divider.join(' | ')} |`,
+        ...padded.slice(1).map(row => `| ${row.join(' | ')} |`)
+      ].join('\n');
+    }
+    async function convertDocx(file) {
+      const result = await mammoth.convertToHtml({ arrayBuffer: await file.arrayBuffer() });
+      return { markdown: htmlToMarkdown(result.value), source: result.value };
+    }
+    async function convertSpreadsheet(file) {
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
+      const sourceRows = [];
+      const markdown = workbook.SheetNames.map(sheetName => {
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: '' });
+        sourceRows.push({ sheet: sheetName, rows });
+        return `## ${sheetName}\n\n${sheetToMarkdown(rows)}`;
+      }).join('\n\n');
+      return { markdown, source: JSON.stringify(sourceRows) };
+    }
+    async function convertPptx(file) {
+      const zip = await JSZip.loadAsync(await file.arrayBuffer());
+      const slideNames = Object.keys(zip.files).filter(name => /^ppt\/slides\/slide\d+\.xml$/.test(name)).sort((a, b) => Number(a.match(/\d+/)[0]) - Number(b.match(/\d+/)[0]));
+      if (!slideNames.length) throw new Error('Слайды не найдены');
+      const parser = new DOMParser();
+      const slideTexts = [];
+      const markdown = (await Promise.all(slideNames.map(async (name, index) => {
+        const xml = parser.parseFromString(await zip.files[name].async('text'), 'application/xml');
+        const texts = [...xml.getElementsByTagNameNS('*', 't')].map(node => node.textContent.trim()).filter(Boolean);
+        slideTexts.push(...texts);
+        return `## Слайд ${index + 1}\n\n${texts.join('\n\n')}`;
+      }))).join('\n\n');
+      return { markdown, source: slideTexts.join('\n') };
+    }
+    async function convertPdf(file) {
+      if (!window.pdfjsLib) throw new Error('PDF-модуль ещё загружается, повторите через секунду');
+      const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+      const pages = [];
+      for (let pageNo = 1; pageNo <= pdf.numPages; pageNo++) {
+        const page = await pdf.getPage(pageNo); const content = await page.getTextContent();
+        const lines = []; let currentY = null; let line = [];
+        content.items.forEach(item => {
+          const y = Math.round(item.transform[5]);
+          if (currentY !== null && Math.abs(y - currentY) > 3) { lines.push(line.join(' ').trim()); line = []; }
+          line.push(item.str); currentY = y;
+        });
+        if (line.length) lines.push(line.join(' ').trim());
+        pages.push(`## Страница ${pageNo}\n\n${lines.filter(Boolean).join('\n')}`);
+      }
+      return { markdown: pages.join('\n\n'), source: pages.map(page => page.replace(/^## Страница \d+\n\n/, '')).join('\n\n') };
+    }
+    async function convertTextLike(file, ext) {
+      let text = await file.text();
+      if (ext === 'html' || ext === 'htm') return { markdown: htmlToMarkdown(text), source: text };
+      if (ext === 'rtf') return { markdown: text.replace(/\\'[0-9a-f]{2}|\\[a-z]+\d* ?|[{}]/gi, '').replace(/\n{3,}/g, '\n\n').trim(), source: text };
+      if (ext === 'json') { try { return { markdown: `\`\`\`json\n${JSON.stringify(JSON.parse(text), null, 2)}\n\`\`\``, source: text }; } catch (_) { return { markdown: text, source: text }; } }
+      if (ext === 'xml') return { markdown: `\`\`\`xml\n${text}\n\`\`\``, source: text };
+      return { markdown: text.trim(), source: text };
+    }
+    async function convertFile(file) {
+      const ext = extensionOf(file.name);
+      if (ext === 'docx') return convertDocx(file);
+      if (ext === 'xlsx' || ext === 'xls') return convertSpreadsheet(file);
+      if (ext === 'pptx') return convertPptx(file);
+      if (ext === 'pdf') return convertPdf(file);
+      if (ext === 'odt') {
+        const zip = await JSZip.loadAsync(await file.arrayBuffer());
+        const source = await zip.file('content.xml').async('text');
+        return { markdown: htmlToMarkdown(source.replace(/<text:p[^>]*>/g, '<p>').replace(/<\/text:p>/g, '</p>').replace(/<text:h[^>]*>/g, '<h2>').replace(/<\/text:h>/g, '</h2>')), source };
+      }
+      return convertTextLike(file, ext);
+    }
+    function normalizeDocumentText(text) {
+      return String(text || '').replace(/\r/g, '').replace(/([а-яa-z])-[\n]+([а-яa-z])/gi, '$1$2').split('\n').map(line => line.replace(/[ \t]+/g, ' ').trim()).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+    }
+    function splitIntoTokenChunks(text, size, overlap) {
+      const value = text.trim();
+      if (!value) return [''];
+      if (window.encodeTextTokens && window.decodeTextTokens) {
+        const tokens = window.encodeTextTokens(value);
+        const result = [];
+        let start = 0;
+        while (start < tokens.length) {
+          const end = Math.min(start + size, tokens.length);
+          result.push(window.decodeTextTokens(tokens.slice(start, end)).trim());
+          if (end >= tokens.length) break;
+          start = Math.max(end - overlap, start + 1);
+        }
+        return result.filter(Boolean);
+      }
+      const words = value.split(/\s+/); const result = [];
+      const wordsPerChunk = Math.max(1, Math.round(size / 1.35));
+      const wordsOverlap = Math.min(wordsPerChunk - 1, Math.round(overlap / 1.35));
+      let start = 0;
+      while (start < words.length) {
+        const end = Math.min(start + wordsPerChunk, words.length);
+        result.push(words.slice(start, end).join(' '));
+        if (end >= words.length) break;
+        start = Math.max(end - wordsOverlap, start + 1);
+      }
+      return result;
+    }
+    function prepareExportChunk(text, fileName, index, total) {
+      const profile = docProfile.value;
+      if (profile === 'rag') return `<!-- source: ${fileName}; chunk: ${index + 1}/${total} -->\n\n${text}`;
+      if (profile === 'cursor') return `### ${fileName} · фрагмент ${index + 1}/${total}\n\n${text}`;
+      if (profile === 'chat') return `Документ: ${fileName}\nФрагмент: ${index + 1}/${total}\n\n${text}`;
+      return text;
+    }
+    function rebuildDocumentExport() {
+      const size = Number(chunkSize.value);
+      const overlap = Math.min(Number(chunkOverlap.value), Math.max(0, size - 1));
+      const allChunks = [];
+      convertedDocuments.forEach(documentItem => {
+        const prepared = cleanDocument.checked ? normalizeDocumentText(documentItem.markdown) : documentItem.markdown.trim();
+        const parts = splitIntoTokenChunks(prepared, size, overlap);
+        parts.forEach((text, index) => allChunks.push({
+          id: `${documentItem.fileName.replace(/[^a-z0-9а-я]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'document'}-${String(index + 1).padStart(3, '0')}`,
+          source: documentItem.fileName,
+          chunk: index + 1,
+          totalChunks: parts.length,
+          text,
+          markdown: prepareExportChunk(text, documentItem.fileName, index, parts.length)
+        }));
+      });
+      latestJsonl = allChunks.map(item => JSON.stringify({ id: item.id, text: item.text, metadata: { file: item.source, chunk: item.chunk, total_chunks: item.totalChunks } })).join('\n');
+      docResult.value = allChunks.map(item => `# ${item.source}\n\n${item.markdown}`).join('\n\n---\n\n');
+      updateDocumentStats();
+      const source = convertedDocuments.map(item => item.source || item.markdown).join('\n\n');
+      if (source || docResult.value) updateTokenCalculator(source, docResult.value);
+      const status = document.getElementById('tokenCalculatorStatus');
+      if (status && allChunks.length) status.textContent = `${allChunks.length} чанков готово`;
+    }
+    async function convertDocuments() {
+      if (!documentQueue.length) return;
+      btnConvertDocs.disabled = true; docProgress.classList.remove('hidden');
+      convertedDocuments = [];
+      for (let i = 0; i < documentQueue.length; i++) {
+        const item = documentQueue[i]; item.state = 'working'; item.message = 'Конвертация...'; renderDocumentQueue();
+        docProgressText.textContent = `Обработка ${i + 1} из ${documentQueue.length}: ${item.file.name}`;
+        docProgressPct.textContent = `${Math.round((i / documentQueue.length) * 100)}%`; docProgressBar.style.width = `${Math.round((i / documentQueue.length) * 100)}%`;
+        try {
+          const converted = await convertFile(item.file);
+          const markdown = converted.markdown;
+          item.state = 'done'; item.message = 'Готово';
+          convertedDocuments.push({ fileName: item.file.name, source: converted.source || markdown, markdown: markdown || '_Документ не содержит извлекаемого текста._' });
+        } catch (error) {
+          console.error(error); item.state = 'error'; item.message = 'Ошибка';
+          convertedDocuments.push({ fileName: item.file.name, source: '', markdown: `> Не удалось сконвертировать файл: ${error.message}` });
+        }
+        renderDocumentQueue();
+      }
+      rebuildDocumentExport();
+      docProgressPct.textContent = '100%'; docProgressBar.style.width = '100%';
+      setTimeout(() => docProgress.classList.add('hidden'), 900);
+      showToast('Документы подготовлены для ИИ', 'file-code-2');
+    }
+    function updateDocumentStats() {
+      const value = docResult.value.trim();
+      docResultStats.textContent = value ? `${value.length.toLocaleString('ru-RU')} симв. · ${value.split(/\s+/).length.toLocaleString('ru-RU')} слов` : '';
+    }
+    function updateTokenCalculator(source, markdown) {
+      const card = document.getElementById('tokenCalculator');
+      const sourceCount = document.getElementById('sourceTokenCount');
+      const markdownCount = document.getElementById('markdownTokenCount');
+      const savedCount = document.getElementById('savedTokenCount');
+      const savedPercent = document.getElementById('savedTokenPercent');
+      const status = document.getElementById('tokenCalculatorStatus');
+      card.classList.remove('hidden');
+      if (!window.countTextTokens) {
+        status.textContent = 'Загрузка токенизатора...';
+        sourceCount.textContent = markdownCount.textContent = savedCount.textContent = '—';
+        savedPercent.textContent = 'Повторите расчёт через секунду';
+        return;
+      }
+      const sourceTokens = window.countTextTokens(source);
+      const markdownTokens = window.countTextTokens(markdown);
+      const saved = sourceTokens - markdownTokens;
+      const percent = sourceTokens ? Math.round((saved / sourceTokens) * 100) : 0;
+      sourceCount.textContent = sourceTokens.toLocaleString('ru-RU');
+      markdownCount.textContent = markdownTokens.toLocaleString('ru-RU');
+      savedCount.textContent = `${saved >= 0 ? '+' : ''}${saved.toLocaleString('ru-RU')}`;
+      savedPercent.textContent = saved >= 0 ? `экономия ${percent}%` : `Markdown больше на ${Math.abs(percent)}%`;
+      status.textContent = 'Реальный расчёт';
+    }
+    document.getElementById('btnChooseDoc').addEventListener('click', e => { e.stopPropagation(); docFileInput.click(); });
+    document.getElementById('btnChooseFolder').addEventListener('click', e => { e.stopPropagation(); docFolderInput.click(); });
+    docDropZone.addEventListener('click', () => docFileInput.click());
+    docFileInput.addEventListener('change', e => { addDocuments(e.target.files); e.target.value = ''; });
+    docFolderInput.addEventListener('change', e => { addDocuments(e.target.files); e.target.value = ''; });
+    ['dragenter', 'dragover'].forEach(eventName => docDropZone.addEventListener(eventName, e => { e.preventDefault(); docDropZone.classList.add('drop-active'); }));
+    ['dragleave', 'drop'].forEach(eventName => docDropZone.addEventListener(eventName, e => { e.preventDefault(); docDropZone.classList.remove('drop-active'); }));
+    docDropZone.addEventListener('drop', e => addDocuments(e.dataTransfer.files));
+    btnClearDocs.addEventListener('click', () => { documentQueue = []; convertedDocuments = []; latestJsonl = ''; docResult.value = ''; updateDocumentStats(); renderDocumentQueue(); document.getElementById('tokenCalculator').classList.add('hidden'); });
+    btnConvertDocs.addEventListener('click', convertDocuments);
+    [docProfile, chunkSize, chunkOverlap, cleanDocument].forEach(control => control.addEventListener('change', () => { if (convertedDocuments.length) rebuildDocumentExport(); }));
+    docResult.addEventListener('input', updateDocumentStats);
+    document.getElementById('btnCopyMarkdown').addEventListener('click', () => { if (docResult.value) navigator.clipboard.writeText(docResult.value).then(() => showToast('Markdown скопирован в буфер')); });
+    document.getElementById('btnDownloadMarkdown').addEventListener('click', () => {
+      if (!docResult.value) return;
+      const blob = new Blob([docResult.value], { type: 'text/markdown;charset=utf-8' }); const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = `documents-${new Date().toISOString().slice(0, 10)}.md`; a.click(); URL.revokeObjectURL(a.href); showToast('Markdown-файл скачан');
+    });
+    document.getElementById('btnDownloadJsonl').addEventListener('click', () => {
+      if (!latestJsonl) return;
+      const blob = new Blob([latestJsonl], { type: 'application/x-ndjson;charset=utf-8' }); const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = `documents-chunks-${new Date().toISOString().slice(0, 10)}.jsonl`; a.click(); URL.revokeObjectURL(a.href); showToast('JSONL с чанками скачан', 'braces');
+    });
+
+
   </script>
 </body>
 </html>
